@@ -1,0 +1,6 @@
+{
+  "name": "SURFTEN LAB - Tegangan Permukaan & Adsorpsi Gibbs",
+  "description": "Aplikasi simulator interaktif dan lembar kerja praktikum kimia fisik: pengukuran tegangan permukaan cairan metode kenaikan kapiler relatif dan penentuan isoterm adsorpsi Gibbs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
