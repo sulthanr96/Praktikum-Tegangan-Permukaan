@@ -226,42 +226,45 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
       {/* Substance Data Tabs & Matrix */}
       <div className="bg-white rounded-xl shadow-sm border border-[#cbd5e1]/60 p-6 flex flex-col gap-4">
         {/* Substance Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#cbd5e1]/40 pb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#cbd5e1]/40 pb-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto -mx-6 px-6 sm:mx-0 sm:px-0">
             <button
               onClick={() => onSubstanceKeyChange('mgcl2')}
-              className={`px-4 py-2 rounded-lg font-['JetBrains_Mono'] text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-['JetBrains_Mono'] text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 currentSubstanceKey === 'mgcl2'
                   ? 'bg-[#003159] text-white shadow-sm'
                   : 'bg-[#eff4ff] text-[#42474f] hover:bg-[#dce9ff]'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-[#D97706]"></span>
-              1. Magnesium Klorida (MgCl₂)
+              <span className="hidden sm:inline">1. Magnesium Klorida (MgCl₂)</span>
+              <span className="sm:hidden">MgCl₂</span>
             </button>
 
             <button
               onClick={() => onSubstanceKeyChange('detergen')}
-              className={`px-4 py-2 rounded-lg font-['JetBrains_Mono'] text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-['JetBrains_Mono'] text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 currentSubstanceKey === 'detergen'
                   ? 'bg-[#003159] text-white shadow-sm'
                   : 'bg-[#eff4ff] text-[#42474f] hover:bg-[#dce9ff]'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-[#0D9488]"></span>
-              2. Deterjen Komersial
+              <span className="hidden sm:inline">2. Deterjen Komersial</span>
+              <span className="sm:hidden">Deterjen</span>
             </button>
 
             <button
               onClick={() => onSubstanceKeyChange('sds')}
-              className={`px-4 py-2 rounded-lg font-['JetBrains_Mono'] text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-['JetBrains_Mono'] text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 currentSubstanceKey === 'sds'
                   ? 'bg-[#003159] text-white shadow-sm'
                   : 'bg-[#eff4ff] text-[#42474f] hover:bg-[#dce9ff]'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-[#7C3AED]"></span>
-              3. Natrium Dodesil Sulfat (SDS)
+              <span className="hidden sm:inline">3. Natrium Dodesil Sulfat (SDS)</span>
+              <span className="sm:hidden">SDS</span>
             </button>
           </div>
 
@@ -272,8 +275,8 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
         </div>
 
         {/* Selected Substance Description Banner */}
-        <div className="bg-[#eff4ff] p-3 rounded-lg flex items-center justify-between text-xs text-[#0b1c30] border border-[#cbd5e1]/40">
-          <div className="flex items-center gap-2">
+        <div className="bg-[#eff4ff] p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-[#0b1c30] border border-[#cbd5e1]/40 gap-3">
+          <div className="flex items-start gap-2">
             <span
               className={`material-symbols-outlined text-lg ${
                 currentSubstanceKey === 'mgcl2'
@@ -285,35 +288,35 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
             >
               {currentSub.icon}
             </span>
-            <span>
-              <strong>{currentSub.name}:</strong> {currentSub.description}
+            <span className="leading-relaxed">
+              <strong>{currentSub.name}:</strong> <span className="hidden sm:inline">{currentSub.description}</span><span className="sm:hidden">{currentSub.description.substring(0, 70)}...</span>
             </span>
           </div>
-          <span className="font-['JetBrains_Mono'] text-xs px-2.5 py-0.5 rounded bg-white text-[#003159] font-bold border border-[#cbd5e1]/40 shrink-0">
+          <span className="font-['JetBrains_Mono'] text-xs px-2.5 py-0.5 rounded bg-white text-[#003159] font-bold border border-[#cbd5e1]/40 shrink-0 self-start sm:self-auto">
             5 Titik Konsentrasi
           </span>
         </div>
 
         {/* Tabular Matrix: Removed "Koreksi Suhu" Column per user instruction */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
+        <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0 pb-4 sm:pb-0">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             <thead>
-              <tr className="bg-[#eff4ff] font-['JetBrains_Mono'] text-xs uppercase tracking-wider text-[#42474f]">
-                <th className="py-2.5 px-3 rounded-l-lg">Konsentrasi (M)</th>
-                <th className="py-2.5 px-3">Massa Pikno + Larutan (g)</th>
-                <th className="py-2.5 px-3">Tinggi Kapiler h (cm)</th>
-                <th className="py-2.5 px-3">Densitas Terhitung ρ (g/cm³)</th>
-                <th className="py-2.5 px-3 rounded-r-lg text-center">Status Titik</th>
+              <tr className="bg-[#eff4ff] font-['JetBrains_Mono'] text-xs font-semibold text-[#003159] border-b border-[#cbd5e1]/40">
+                <th className="py-3 px-4 whitespace-nowrap">Konsentrasi (M)</th>
+                <th className="py-3 px-4 whitespace-nowrap">Massa Pikno + Larutan (g)</th>
+                <th className="py-3 px-4 whitespace-nowrap">Tinggi Kapiler h (cm)</th>
+                <th className="py-3 px-4 whitespace-nowrap">Densitas Terhitung ρ (g/cm³)</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">Status Titik</th>
               </tr>
             </thead>
-            <tbody className="font-['JetBrains_Mono'] text-xs divide-y divide-[#cbd5e1]/30">
+            <tbody className="font-['JetBrains_Mono'] text-sm divide-y divide-[#cbd5e1]/30">
               {calculatedRows.map((row, idx) => (
-                <tr key={`${currentSubstanceKey}-${row.concentration}`} className="hover:bg-[#eff4ff]/60 transition-colors">
-                  <td className="py-2.5 px-3 font-bold text-[#003159]">{row.concentration.toFixed(2)} M</td>
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center bg-[#eff4ff] px-2.5 py-1 rounded-md border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-1 focus-within:ring-[#0D9488] transition-all max-w-[150px]">
+                <tr key={`${currentSubstanceKey}-${row.concentration}`} className="hover:bg-[#eff4ff]/60 transition-colors border-b border-[#cbd5e1]/40">
+                  <td className="py-3 px-4 font-bold text-[#003159]">{row.concentration.toFixed(2)} M</td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center bg-[#eff4ff] px-2.5 py-2 rounded-md border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-1 focus-within:ring-[#0D9488] transition-all min-w-[120px] max-w-[150px]">
                       <NumericInput
-                        className="w-full bg-transparent font-['JetBrains_Mono'] text-xs text-[#003159] font-semibold focus:outline-none"
+                        className="w-full bg-transparent font-['JetBrains_Mono'] text-xs sm:text-sm text-[#003159] font-semibold focus:outline-none"
                         fallbackValue={0}
                         onChange={(val) =>
                           onDataChange(currentSubstanceKey, idx, 'mPikno', val)
@@ -324,10 +327,10 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
                       <span className="font-['JetBrains_Mono'] text-[11px] text-[#42474f] shrink-0 ml-1">g</span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center bg-[#eff4ff] px-2.5 py-1 rounded-md border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-1 focus-within:ring-[#0D9488] transition-all max-w-[130px]">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center bg-[#eff4ff] px-2.5 py-2 rounded-md border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-1 focus-within:ring-[#0D9488] transition-all min-w-[120px] max-w-[130px]">
                       <NumericInput
-                        className="w-full bg-transparent font-['JetBrains_Mono'] text-xs text-[#003159] font-semibold focus:outline-none"
+                        className="w-full bg-transparent font-['JetBrains_Mono'] text-xs sm:text-sm text-[#003159] font-semibold focus:outline-none"
                         fallbackValue={0}
                         onChange={(val) =>
                           onDataChange(currentSubstanceKey, idx, 'hCapillary', val)
@@ -338,8 +341,8 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
                       <span className="font-['JetBrains_Mono'] text-[11px] text-[#42474f] shrink-0 ml-1">cm</span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-3 text-[#0b1c30] font-semibold">{row.rho.toFixed(4)}</td>
-                  <td className="py-2.5 px-3 text-center">
+                  <td className="py-3 px-4 text-[#0b1c30] font-semibold">{row.rho.toFixed(4)}</td>
+                  <td className="py-3 px-4 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#eff4ff] text-[#059669] font-semibold border border-[#059669]/20 text-[11px]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>
                       Valid

@@ -1,43 +1,58 @@
 import React, { useState } from 'react';
-import { SubstanceInfo, GlobalCalibration, CalculatedDataRow } from '../types';
-import { generateCSV, generateMarkdown } from '../utils/physics';
+import { SubstanceInfo, GlobalCalibration, CalculatedDataRow, AnalysisMode } from '../types';
+import { generateMarkdown } from '../utils/physics';
+import { exportExcel } from '../utils/excelExport';
 
 interface Section5ExportProps {
   currentSubstance: SubstanceInfo;
   calibration: GlobalCalibration;
   calculatedRows: CalculatedDataRow[];
+  substances: Record<string, SubstanceInfo>;
+  analysisMode: AnalysisMode;
+  onPrintReport: () => void;
+  onPrintGraphics: () => void;
 }
 
 export const Section5Export: React.FC<Section5ExportProps> = ({
   currentSubstance,
   calibration,
   calculatedRows,
+  substances,
+  analysisMode,
+  onPrintReport,
+  onPrintGraphics,
 }) => {
-  const [copied, setCopied] = useState<boolean>(false);
+  const checkCompletion = () => {
+    if (calibration.mKosong === 0 || calibration.mAir === 0 || calibration.hAir === 0) return false;
+    for (const key of ['mgcl2', 'detergen', 'sds']) {
+      const sub = substances[key];
+      if (sub.mPikno.some(v => v === 0) || sub.hCapillary.some(v => v === 0)) return false;
+    }
+    return true;
+  };
 
-  const handleDownloadCSV = () => {
-    const csvContent = generateCSV(currentSubstance, calibration, calculatedRows);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Laporan_TeganganPermukaan_${currentSubstance.id}_UI.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDownloadExcel = () => {
+    if (!checkCompletion()) {
+      alert("⚠️ Mohon lengkapi seluruh data input di Bagian 3 terlebih dahulu!");
+      return;
+    }
+    exportExcel(substances, calibration, analysisMode);
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!checkCompletion()) {
+      alert("⚠️ Mohon lengkapi seluruh data input di Bagian 3 terlebih dahulu!");
+      return;
+    }
+    onPrintReport();
   };
 
-  const handleCopyMarkdown = () => {
-    const md = generateMarkdown(currentSubstance, calculatedRows);
-    navigator.clipboard.writeText(md).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
+  const handlePrintGraphics = () => {
+    if (!checkCompletion()) {
+      alert("⚠️ Mohon lengkapi seluruh data input di Bagian 3 terlebih dahulu!");
+      return;
+    }
+    onPrintGraphics();
   };
 
   return (
@@ -54,48 +69,47 @@ export const Section5Export: React.FC<Section5ExportProps> = ({
           </h2>
         </div>
         <div className="font-['JetBrains_Mono'] text-xs text-[#42474f] bg-[#e5eeff] px-3 py-1.5 rounded-lg border border-[#cbd5e1]/40">
-          Format Terstandar Departemen Kimia UI
+          Format Laporan Standar
         </div>
       </div>
 
       {/* Export Cards Bento */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* CSV */}
+        {/* Excel */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-[#cbd5e1]/60 flex flex-col justify-between gap-4 hover:shadow-md transition-shadow">
           <div className="flex flex-col gap-2">
-            <div className="w-12 h-12 rounded-lg bg-[#eff4ff] flex items-center justify-center text-[#0D9488] border border-[#cbd5e1]/40">
+            <div className="w-12 h-12 rounded-lg bg-[#f0fdf4] flex items-center justify-center text-[#15803d] border border-[#16a34a]/20">
               <span className="material-symbols-outlined text-2xl">table_view</span>
             </div>
             <h3 className="font-['Space_Grotesk'] font-bold text-lg text-[#003159]">
-              Lembar Kerja Excel (.csv / .xlsx)
+              Unduh Spreadsheet Excel (.xlsx)
             </h3>
             <p className="font-['Inter'] text-xs text-[#42474f] leading-relaxed">
-              Ekspor seluruh data mentah piknometer, observasi kenaikan kapiler 15 baris, dan hasil pengolahan Gibbs ke format
-              spreadsheet yang kompatibel dengan Microsoft Excel dan Google Sheets.
+              Ekspor seluruh matriks data mentah, langkah kalkulasi antara, hingga rekapitulasi 6 grafik
+              sebagai lampiran pengolahan data praktikum resmi.
             </p>
           </div>
           <button
-            onClick={handleDownloadCSV}
-            className="w-full py-2.5 px-4 rounded-lg bg-[#003159] text-white font-['JetBrains_Mono'] text-xs font-semibold hover:bg-[#0e487a] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+            onClick={handleDownloadExcel}
+            className="w-full py-2.5 px-4 rounded-lg bg-[#16a34a] text-white font-['JetBrains_Mono'] text-xs font-semibold hover:bg-[#15803d] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
             type="button"
           >
             <span className="material-symbols-outlined text-base">download</span>
-            Unduh Dataset CSV
+            Unduh Excel
           </button>
         </div>
 
-        {/* Print / PDF */}
+        {/* PDF Laporan */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-[#cbd5e1]/60 flex flex-col justify-between gap-4 hover:shadow-md transition-shadow">
           <div className="flex flex-col gap-2">
             <div className="w-12 h-12 rounded-lg bg-[#eff4ff] flex items-center justify-center text-[#00687a] border border-[#cbd5e1]/40">
               <span className="material-symbols-outlined text-2xl">picture_as_pdf</span>
             </div>
             <h3 className="font-['Space_Grotesk'] font-bold text-lg text-[#003159]">
-              Cetak Lembar Pengamatan Aslab
+              Laporan PDF Komprehensif
             </h3>
             <p className="font-['Inter'] text-xs text-[#42474f] leading-relaxed">
-              Tampilkan dialog print-to-PDF yang bersih tanpa elemen antarmuka, siap ditandatangani oleh asisten laboratorium
-              pengampu sebagai bukti penyelesaian praktikum bench.
+              Kompilasi laporan tercetak berisi lembar perhitungan manual langkah demi langkah untuk setiap persamaan termodinamika.
             </p>
           </div>
           <button
@@ -104,40 +118,30 @@ export const Section5Export: React.FC<Section5ExportProps> = ({
             type="button"
           >
             <span className="material-symbols-outlined text-base">print</span>
-            Cetak Dokumen Resmi
+            Cetak / Simpan PDF
           </button>
         </div>
 
-        {/* Markdown / LaTeX */}
+        {/* PDF Grafik */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-[#cbd5e1]/60 flex flex-col justify-between gap-4 hover:shadow-md transition-shadow">
           <div className="flex flex-col gap-2">
-            <div className="w-12 h-12 rounded-lg bg-[#eff4ff] flex items-center justify-center text-[#7C3AED] border border-[#cbd5e1]/40">
-              <span className="material-symbols-outlined text-2xl">content_copy</span>
+            <div className="w-12 h-12 rounded-lg bg-[#fef2f2] flex items-center justify-center text-[#e11d48] border border-[#f43f5e]/20">
+              <span className="material-symbols-outlined text-2xl">analytics</span>
             </div>
             <h3 className="font-['Space_Grotesk'] font-bold text-lg text-[#003159]">
-              Salin Format Markdown / LaTeX
+              Export 6 Grafik (PDF)
             </h3>
             <p className="font-['Inter'] text-xs text-[#42474f] leading-relaxed">
-              Salin matriks tabel pengamatan dalam format sintaks Markdown atau LaTeX tabular untuk disematkan langsung ke
-              dalam laporan mingguan atau Notion praktikan.
+              Ekspor khusus untuk 6 kurva grafik (Tegangan Permukaan &amp; Isoterm Gibbs) dari 3 zat terlarut sekaligus dalam satu berkas PDF siap cetak.
             </p>
           </div>
           <button
-            onClick={handleCopyMarkdown}
-            className="w-full py-2.5 px-4 rounded-lg bg-[#eff4ff] text-[#003159] font-['JetBrains_Mono'] text-xs font-semibold hover:bg-[#dce9ff] transition-all flex items-center justify-center gap-2 border border-[#cbd5e1]/50 active:scale-95"
+            onClick={handlePrintGraphics}
+            className="w-full py-2.5 px-4 rounded-lg bg-[#e11d48] text-white font-['JetBrains_Mono'] text-xs font-semibold hover:bg-[#be123c] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
             type="button"
           >
-            {copied ? (
-              <>
-                <span className="material-symbols-outlined text-base text-[#059669]">check</span>
-                <span className="text-[#059669]">Berhasil Disalin!</span>
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-base">terminal</span>
-                <span>Salin Tabel Markdown</span>
-              </>
-            )}
+            <span className="material-symbols-outlined text-base">auto_graph</span>
+            Cetak Grafik (PDF)
           </button>
         </div>
       </div>
@@ -150,7 +154,7 @@ export const Section5Export: React.FC<Section5ExportProps> = ({
           </div>
           <div className="flex flex-col">
             <span className="font-['Space_Grotesk'] text-base font-bold text-[#003159]">
-              Verifikasi Integritas Praktikum
+              Verifikasi Hasil Praktikum
             </span>
             <span className="font-['Inter'] text-xs text-[#42474f]">
               Semua perhitungan memenuhi toleransi hukum Young-Laplace dan batas derivatif Gibbs.
@@ -159,7 +163,7 @@ export const Section5Export: React.FC<Section5ExportProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <span className="px-3 py-1 rounded-lg bg-[#eff4ff] text-[#003159] font-['JetBrains_Mono'] text-xs font-bold border border-[#cbd5e1]/40">
-            Laboratorium Kimia Fisik UI
+            Praktikum Kimia Fisik
           </span>
         </div>
       </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { SubstanceInfo, CalculatedDataRow, RegressionStats, AnalysisMode } from '../types';
+import React, { useRef } from 'react';
+import { SubstanceInfo, CalculatedDataRow, RegressionStats, AnalysisMode, SubstanceKey } from '../types';
 
 interface Section4AnalysisProps {
   currentSubstance: SubstanceInfo;
@@ -8,6 +8,7 @@ interface Section4AnalysisProps {
   calculatedRows: CalculatedDataRow[];
   regression: RegressionStats;
   maxExcess: number;
+  onSubstanceChange: (key: SubstanceKey) => void;
 }
 
 export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
@@ -17,34 +18,82 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
   calculatedRows,
   regression,
   maxExcess,
+  onSubstanceChange,
 }) => {
+  const svg1Ref = useRef<SVGSVGElement>(null);
+  const svg2Ref = useRef<SVGSVGElement>(null);
+
+  const downloadSvgAsPng = (svgRef: React.RefObject<SVGSVGElement>, filename: string) => {
+    if (!svgRef.current) return;
+    const svg = svgRef.current;
+    
+    // Create a clone to embed Google Fonts if needed, but since we rely on system fonts JetBrains Mono / Space Grotesk, 
+    // for highest reliability across devices without the font installed, it's best to serialize as is.
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const scale = 4; // High resolution
+    const width = 450;
+    const height = 330;
+    
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    
+    const img = new Image();
+    // Base64 encode for reliable rendering in canvas
+    const b64 = btoa(unescape(encodeURIComponent(svgData)));
+    img.onload = () => {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, width * scale, height * scale);
+      
+      const pngUrl = canvas.toDataURL('image/png', 1.0);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    };
+    img.src = 'data:image/svg+xml;base64,' + b64;
+  };
+
   const concs = calculatedRows.map((r) => r.concentration);
   const gammas = calculatedRows.map((r) => r.gamma);
   const excesses = calculatedRows.map((r) => r.surfaceExcessMicro);
 
-  // Chart 1 coordinate mapping:
-  // X range: 0.02 to 0.10 M -> mapped to [70, 410]
-  // Y range: min/max gamma -> mapped to [185, 35]
-  const mapX = (c: number) => 70 + ((c - 0.02) / 0.08) * 340;
+    // Chart 1 coordinate mapping:
+    // X range: 0.02 to 0.10 M -> mapped to [60, 420]
+    const mapX = (c: number) => 60 + ((c - 0.02) / 0.08) * 360;
+    
+    // Y range mapping with padding to keep lines away from titles and edges
+    const minG = Math.min(...gammas, 20);
+    const maxG = Math.max(...gammas, 80);
+    const rangeG = maxG - minG || 1;
+    const paddedMinG = minG - rangeG * 0.1;
+    const paddedMaxG = maxG + rangeG * 0.2;
+    const mapY1 = (g: number) => {
+      const pRange = paddedMaxG - paddedMinG;
+      // Grid is from y=110 to y=270 (Height = 160)
+      return 270 - ((g - paddedMinG) / pRange) * 160;
+    };
   
-  const minG = Math.min(...gammas, 20);
-  const maxG = Math.max(...gammas, 80);
-  const mapY1 = (g: number) => {
-    const range = maxG - minG || 1;
-    return 190 - ((g - minG) / range) * 155;
-  };
-
-  const chart1Path = concs
-    .map((c, i) => `${i === 0 ? 'M' : 'L'} ${mapX(c)} ${mapY1(gammas[i])}`)
-    .join(' ');
-
-  // Chart 2 coordinate mapping:
-  const minE = Math.min(...excesses, -1.0);
-  const maxE = Math.max(...excesses, 2.0);
-  const mapY2 = (e: number) => {
-    const range = maxE - minE || 1;
-    return 190 - ((e - minE) / range) * 155;
-  };
+    const chart1Path = concs
+      .map((c, i) => `${i === 0 ? 'M' : 'L'} ${mapX(c)} ${mapY1(gammas[i])}`)
+      .join(' ');
+  
+    // Chart 2 coordinate mapping:
+    const minE = Math.min(...excesses, -1.0);
+    const maxE = Math.max(...excesses, 2.0);
+    const rangeE = maxE - minE || 1;
+    const paddedMinE = minE - rangeE * 0.1;
+    const paddedMaxE = maxE + rangeE * 0.2;
+    const mapY2 = (e: number) => {
+      const pRange = paddedMaxE - paddedMinE;
+      return 270 - ((e - paddedMinE) / pRange) * 160;
+    };
 
   const zeroLineY = mapY2(0);
 
@@ -92,57 +141,77 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
       </div>
 
       {/* Result Table Card */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-[#cbd5e1]/60 flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white rounded-xl shadow-sm border border-[#cbd5e1]/60 overflow-hidden flex flex-col">
+        <div className="bg-[#eff4ff] px-5 py-3 border-b border-[#cbd5e1]/40 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="font-['Space_Grotesk'] font-bold text-lg text-[#003159]">
               Tabel Hasil Perhitungan Komprehensif
             </span>
-            <span
-              className={`px-2.5 py-0.5 rounded font-['JetBrains_Mono'] text-xs font-bold ${
-                currentSubstance.id === 'mgcl2'
-                  ? 'bg-[#fffbeb] text-[#D97706] border border-[#D97706]/30'
-                  : currentSubstance.id === 'sds'
-                  ? 'bg-[#f5f3ff] text-[#7C3AED] border border-[#7C3AED]/30'
-                  : 'bg-[#f0fdfa] text-[#0D9488] border border-[#0D9488]/30'
-              }`}
-            >
-              {currentSubstance.name}
-            </span>
           </div>
-          <div className="font-['JetBrains_Mono'] text-xs text-[#42474f]">
-            Metode Aktif:{' '}
-            <span className="font-bold text-[#003159]">
-              {analysisMode === 'alurA'
-                ? 'Regresi Polinomial Orde 1 (dγ/dC Analitik)'
-                : 'Beda Hingga Numerik (Central & Forward Difference)'}
-            </span>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="font-['JetBrains_Mono'] text-xs text-[#42474f] hidden xl:block">
+              Metode Aktif:{' '}
+              <span className="font-bold text-[#003159]">
+                {analysisMode === 'alurA'
+                  ? 'Regresi Polinomial'
+                  : 'Beda Hingga Numerik'}
+              </span>
+            </div>
+            
+            {/* Tab Selector untuk Substance */}
+            <div className="flex bg-[#dce9ff] p-1 rounded-lg">
+              <button
+                onClick={() => onSubstanceChange('mgcl2')}
+                className={`px-4 py-1.5 rounded-md text-sm font-['JetBrains_Mono'] font-semibold transition-all ${
+                  currentSubstance.id === 'mgcl2' ? 'bg-white text-[#003159] shadow-sm' : 'text-[#42474f] hover:text-[#003159]'
+                }`}
+              >
+                (A) MgCl₂
+              </button>
+              <button
+                onClick={() => onSubstanceChange('sds')}
+                className={`px-4 py-1.5 rounded-md text-sm font-['JetBrains_Mono'] font-semibold transition-all ${
+                  currentSubstance.id === 'sds' ? 'bg-white text-[#003159] shadow-sm' : 'text-[#42474f] hover:text-[#003159]'
+                }`}
+              >
+                (B) SDS
+              </button>
+              <button
+                onClick={() => onSubstanceChange('detergen')}
+                className={`px-4 py-1.5 rounded-md text-sm font-['JetBrains_Mono'] font-semibold transition-all ${
+                  currentSubstance.id === 'detergen' ? 'bg-white text-[#003159] shadow-sm' : 'text-[#42474f] hover:text-[#003159]'
+                }`}
+              >
+                (C) Detergen
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
+        <div className="overflow-x-auto p-4">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#eff4ff] font-['JetBrains_Mono'] text-xs uppercase tracking-wider text-[#42474f]">
-                <th className="py-2.5 px-3 rounded-l-lg">C (M)</th>
-                <th className="py-2.5 px-3">C (mol/m³)</th>
-                <th className="py-2.5 px-3">ρ (g/cm³)</th>
-                <th className="py-2.5 px-3">h (cm)</th>
-                <th className="py-2.5 px-3">γ (mN/m)</th>
-                <th className="py-2.5 px-3">dγ/dC (mN·L / m·mol)</th>
-                <th className="py-2.5 px-3 rounded-r-lg">Γ (× 10⁻⁶ mol/m²)</th>
+              <tr className="bg-[#eff4ff] font-['JetBrains_Mono'] text-xs font-semibold text-[#003159] border-b border-[#cbd5e1]/40">
+                <th className="py-3 px-4 whitespace-nowrap" title="Konsentrasi">C (M)</th>
+                <th className="py-3 px-4 whitespace-nowrap" title="Konsentrasi dalam SI">C (mol/m³)</th>
+                <th className="py-3 px-4 whitespace-nowrap" title="Densitas Terhitung">ρ (g/cm³)</th>
+                <th className="py-3 px-4 whitespace-nowrap" title="Tinggi Kapiler">h (cm)</th>
+                <th className="py-3 px-4 whitespace-nowrap" title="Tegangan Permukaan">γ (mN/m)</th>
+                <th className="py-3 px-4 whitespace-nowrap" title="Turunan Tegangan thd Konsentrasi">dγ/dC (mN·L / m·mol)</th>
+                <th className="py-3 px-4 whitespace-nowrap" title="Isoterm Adsorpsi Gibbs">Γ (× 10⁻⁶ mol/m²)</th>
               </tr>
             </thead>
-            <tbody className="font-['JetBrains_Mono'] text-xs divide-y divide-[#cbd5e1]/30">
+            <tbody className="font-['JetBrains_Mono'] text-sm divide-y divide-[#cbd5e1]/30">
               {calculatedRows.map((r) => (
                 <tr key={r.concentration} className="hover:bg-[#eff4ff]/60 transition-colors">
-                  <td className="py-2.5 px-3 font-bold text-[#003159]">{r.concentration.toFixed(2)}</td>
-                  <td className="py-2.5 px-3 text-[#42474f]">{r.concentrationMolM3.toFixed(0)}</td>
-                  <td className="py-2.5 px-3 text-[#0b1c30]">{r.rho.toFixed(4)}</td>
-                  <td className="py-2.5 px-3 text-[#0b1c30]">{r.hCapillary.toFixed(2)}</td>
-                  <td className="py-2.5 px-3 font-bold text-[#003159]">{r.gamma.toFixed(2)}</td>
+                  <td className="py-3 px-4 font-bold text-[#003159]">{r.concentration.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-[#42474f]">{r.concentrationMolM3.toFixed(0)}</td>
+                  <td className="py-3 px-4 text-[#0b1c30]">{r.rho.toFixed(4)}</td>
+                  <td className="py-3 px-4 text-[#0b1c30]">{r.hCapillary.toFixed(2)}</td>
+                  <td className="py-3 px-4 font-bold text-[#003159]">{r.gamma.toFixed(2)}</td>
                   <td
-                    className={`py-2.5 px-3 font-semibold ${
+                    className={`py-3 px-4 font-semibold ${
                       r.dGammaDC < 0 ? 'text-[#E11D48]' : 'text-[#D97706]'
                     }`}
                   >
@@ -150,7 +219,7 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
                     {r.dGammaDC.toFixed(2)}
                   </td>
                   <td
-                    className={`py-2.5 px-3 font-bold ${
+                    className={`py-3 px-4 font-bold ${
                       r.surfaceExcessMicro >= 0 ? 'text-[#7C3AED]' : 'text-[#D97706]'
                     }`}
                   >
@@ -184,41 +253,76 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
 
           {/* Canvas SVG */}
           <div className="relative w-full h-72 bg-[#eff4ff] rounded-lg p-3 flex items-center justify-center border border-[#cbd5e1]/40">
-            <svg className="w-full h-full" viewBox="0 0 450 240">
+            <button 
+              onClick={() => downloadSvgAsPng(svg1Ref, `Tegangan_Permukaan_${currentSubstance.name}.png`)}
+              className="absolute top-2 right-2 p-1.5 bg-white border border-[#cbd5e1] rounded-md shadow-sm text-[#42474f] hover:bg-[#f1f5f9] transition-colors z-10 print:hidden"
+              title="Unduh Grafik (PNG)"
+            >
+              <span className="material-symbols-outlined text-[18px]">download</span>
+            </button>
+            <svg ref={svg1Ref} className="w-full h-full" viewBox="0 0 450 330" style={{ backgroundColor: 'white' }}>
+              <rect x="0" y="0" width="450" height="330" fill="none" stroke="#0f172a" strokeWidth="2" />
+              {/* Titles */}
+              <text x="240" y="25" textAnchor="middle" fill="#003159" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="bold">
+                Profil Tegangan Permukaan (γ) vs Konsentrasi
+              </text>
+              <text x="240" y="42" textAnchor="middle" fill="#64748b" fontFamily="Inter, sans-serif" fontSize="11">
+                {currentSubstance.name}
+              </text>
+
+              {/* Regression Info Box */}
+              <rect x="120" y="55" width="240" height="36" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+              <text x="240" y="70" textAnchor="middle" fill="#334155" fontFamily="JetBrains Mono" fontSize="10" fontWeight="bold">
+                Linear Fit
+              </text>
+              <text x="240" y="84" textAnchor="middle" fill="#475569" fontFamily="JetBrains Mono" fontSize="10">
+                γ = {regression.slope >= 0 ? '+' : ''}{regression.slope.toFixed(2)}x + {regression.intercept.toFixed(2)} (R² = {regression.r2.toFixed(3)})
+              </text>
+
               {/* Grid Lines */}
               <g stroke="#cbd5e1" strokeDasharray="3 3" strokeWidth="0.8">
-                <line x1="50" x2="50" y1="20" y2="200" />
-                <line x1="145" x2="145" y1="20" y2="200" />
-                <line x1="240" x2="240" y1="20" y2="200" />
-                <line x1="335" x2="335" y1="20" y2="200" />
-                <line x1="430" x2="430" y1="20" y2="200" />
+                <line x1="60" x2="60" y1="110" y2="270" />
+                <line x1="150" x2="150" y1="110" y2="270" />
+                <line x1="240" x2="240" y1="110" y2="270" />
+                <line x1="330" x2="330" y1="110" y2="270" />
+                <line x1="420" x2="420" y1="110" y2="270" />
 
-                <line x1="50" x2="430" y1="20" y2="20" />
-                <line x1="50" x2="430" y1="65" y2="65" />
                 <line x1="50" x2="430" y1="110" y2="110" />
-                <line x1="50" x2="430" y1="155" y2="155" />
-                <line x1="50" x2="430" y1="200" y2="200" />
+                <line x1="50" x2="430" y1="150" y2="150" />
+                <line x1="50" x2="430" y1="190" y2="190" />
+                <line x1="50" x2="430" y1="230" y2="230" />
+                <line x1="50" x2="430" y1="270" y2="270" />
+              </g>
+
+              {/* X Axis Tick Labels */}
+              <g fill="#42474f" fontFamily="JetBrains Mono" fontSize="10" textAnchor="middle">
+                <text x="60" y="288">0.02</text>
+                <text x="150" y="288">0.04</text>
+                <text x="240" y="288">0.06</text>
+                <text x="330" y="288">0.08</text>
+                <text x="420" y="288">0.10</text>
               </g>
 
               {/* Axis labels */}
-              <text fill="#42474f" fontFamily="JetBrains Mono" fontSize="11" textAnchor="middle" x="240" y="225">
+              <text fill="#0f172a" fontFamily="JetBrains Mono" fontSize="12" fontWeight="bold" textAnchor="middle" x="240" y="315">
                 Konsentrasi C (Molar)
               </text>
               <text
-                fill="#42474f"
+                fill="#0f172a"
                 fontFamily="JetBrains Mono"
-                fontSize="11"
+                fontSize="12"
+                fontWeight="bold"
                 textAnchor="middle"
-                transform="rotate(-90 18 110)"
-                x="18"
-                y="110"
+                transform="rotate(-90 15 190)"
+                x="15"
+                y="190"
               >
                 γ (mN/m)
               </text>
 
               {/* Reference pure water horizontal dash */}
-              <line stroke="#727780" strokeDasharray="4 2" strokeWidth="1" x1="50" x2="430" y1="50" y2="50" />
-              <text fill="#727780" fontFamily="JetBrains Mono" fontSize="9" x="375" y="44">
+              <line stroke="#727780" strokeDasharray="4 2" strokeWidth="1" x1="50" x2="430" y1={mapY1(71.97)} y2={mapY1(71.97)} />
+              <text fill="#727780" fontFamily="JetBrains Mono" fontSize="9" x="375" y={mapY1(71.97) - 4}>
                 γ_air baku
               </text>
 
@@ -235,11 +339,11 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
                     <text
                       fill="#003159"
                       fontFamily="JetBrains Mono"
-                      fontSize="9"
+                      fontSize="10"
                       fontWeight="bold"
                       textAnchor="middle"
                       x={cx}
-                      y={cy - 9}
+                      y={cy - 10}
                     >
                       {gammas[i].toFixed(1)}
                     </text>
@@ -276,40 +380,75 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
 
           {/* Canvas SVG */}
           <div className="relative w-full h-72 bg-[#eff4ff] rounded-lg p-3 flex items-center justify-center border border-[#cbd5e1]/40">
-            <svg className="w-full h-full" viewBox="0 0 450 240">
+            <button 
+              onClick={() => downloadSvgAsPng(svg2Ref, `Surface_Excess_${currentSubstance.name}.png`)}
+              className="absolute top-2 right-2 p-1.5 bg-white border border-[#cbd5e1] rounded-md shadow-sm text-[#42474f] hover:bg-[#f1f5f9] transition-colors z-10 print:hidden"
+              title="Unduh Grafik (PNG)"
+            >
+              <span className="material-symbols-outlined text-[18px]">download</span>
+            </button>
+            <svg ref={svg2Ref} className="w-full h-full" viewBox="0 0 450 330" style={{ backgroundColor: 'white' }}>
+              <rect x="0" y="0" width="450" height="330" fill="none" stroke="#0f172a" strokeWidth="2" />
+              {/* Titles */}
+              <text x="240" y="25" textAnchor="middle" fill="#003159" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="bold">
+                Isoterm Adsorpsi Gibbs (Surface Excess)
+              </text>
+              <text x="240" y="42" textAnchor="middle" fill="#64748b" fontFamily="Inter, sans-serif" fontSize="11">
+                {currentSubstance.name}
+              </text>
+
+              {/* Info Box */}
+              <rect x="150" y="55" width="180" height="36" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+              <text x="240" y="70" textAnchor="middle" fill="#334155" fontFamily="JetBrains Mono" fontSize="10" fontWeight="bold">
+                Max Surface Excess (Γ):
+              </text>
+              <text x="240" y="84" textAnchor="middle" fill="#475569" fontFamily="JetBrains Mono" fontSize="10">
+                {maxExcess.toFixed(3)} μmol/m²
+              </text>
+
               {/* Grid Lines */}
               <g stroke="#cbd5e1" strokeDasharray="3 3" strokeWidth="0.8">
-                <line x1="50" x2="50" y1="20" y2="200" />
-                <line x1="145" x2="145" y1="20" y2="200" />
-                <line x1="240" x2="240" y1="20" y2="200" />
-                <line x1="335" x2="335" y1="20" y2="200" />
-                <line x1="430" x2="430" y1="20" y2="200" />
+                <line x1="60" x2="60" y1="110" y2="270" />
+                <line x1="150" x2="150" y1="110" y2="270" />
+                <line x1="240" x2="240" y1="110" y2="270" />
+                <line x1="330" x2="330" y1="110" y2="270" />
+                <line x1="420" x2="420" y1="110" y2="270" />
 
-                <line x1="50" x2="430" y1="20" y2="20" />
-                <line x1="50" x2="430" y1="65" y2="65" />
                 <line x1="50" x2="430" y1="110" y2="110" />
-                <line x1="50" x2="430" y1="155" y2="155" />
-                <line x1="50" x2="430" y1="200" y2="200" />
+                <line x1="50" x2="430" y1="150" y2="150" />
+                <line x1="50" x2="430" y1="190" y2="190" />
+                <line x1="50" x2="430" y1="230" y2="230" />
+                <line x1="50" x2="430" y1="270" y2="270" />
+              </g>
+
+              {/* X Axis Tick Labels */}
+              <g fill="#42474f" fontFamily="JetBrains Mono" fontSize="10" textAnchor="middle">
+                <text x="60" y="288">0.02</text>
+                <text x="150" y="288">0.04</text>
+                <text x="240" y="288">0.06</text>
+                <text x="330" y="288">0.08</text>
+                <text x="420" y="288">0.10</text>
               </g>
 
               {/* Zero Baseline for Surface Excess */}
               <line stroke="#E11D48" strokeDasharray="4 2" strokeWidth="1.5" x1="50" x2="430" y1={zeroLineY} y2={zeroLineY} />
-              <text fill="#E11D48" fontFamily="JetBrains Mono" fontSize="9" fontWeight="bold" x="396" y={zeroLineY - 4}>
+              <text fill="#E11D48" fontFamily="JetBrains Mono" fontSize="10" fontWeight="bold" x="396" y={zeroLineY - 6}>
                 Γ = 0
               </text>
 
               {/* Axis labels */}
-              <text fill="#42474f" fontFamily="JetBrains Mono" fontSize="11" textAnchor="middle" x="240" y="225">
+              <text fill="#0f172a" fontFamily="JetBrains Mono" fontSize="12" fontWeight="bold" textAnchor="middle" x="240" y="315">
                 Konsentrasi C (Molar)
               </text>
               <text
-                fill="#42474f"
+                fill="#0f172a"
                 fontFamily="JetBrains Mono"
-                fontSize="11"
+                fontSize="12"
+                fontWeight="bold"
                 textAnchor="middle"
-                transform="rotate(-90 18 110)"
-                x="18"
-                y="110"
+                transform="rotate(-90 15 190)"
+                x="15"
+                y="190"
               >
                 Γ (μmol/m²)
               </text>
@@ -340,11 +479,11 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
                     <text
                       fill={isPositive ? '#7C3AED' : '#D97706'}
                       fontFamily="JetBrains Mono"
-                      fontSize="9"
+                      fontSize="10"
                       fontWeight="bold"
                       textAnchor="middle"
                       x={cx}
-                      y={cy - 9}
+                      y={cy - 10}
                     >
                       {excesses[i].toFixed(2)}
                     </text>

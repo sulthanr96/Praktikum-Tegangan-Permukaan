@@ -1,58 +1,48 @@
 import React from 'react';
 
 interface SubNavRibbonProps {
-  activeSection: string;
-  onNavigate: (sectionId: string) => void;
+  currentStep: number;
+  onNavigate: (step: number) => void;
 }
 
-export const SubNavRibbon: React.FC<SubNavRibbonProps> = ({ activeSection, onNavigate }) => {
-  const anchors = [
-    { id: 'pendahuluan', label: '1. Teori Fisika', dotColor: 'bg-[#0D9488]' },
-    { id: 'prosedur', label: '2. Prosedur & Alat', dotColor: 'bg-[#00687a]' },
-    { id: 'lembar-kerja', label: '3. Data Input', dotColor: 'bg-[#7C3AED]' },
-    { id: 'analisis-hasil', label: '4. Analisis & Grafik', dotColor: 'bg-[#00E5FF]' },
-    { id: 'unduh-laporan', label: '5. Ekspor', isButton: true },
-  ];
+const STEPS = [
+  { icon: 'school', label: 'Teori', color: 'text-[#0D9488]' },
+  { icon: 'architecture', label: 'Prosedur', color: 'text-[#00687a]' },
+  { icon: 'edit_note', label: 'Data Input', color: 'text-[#7C3AED]' },
+  { icon: 'analytics', label: 'Analisis', color: 'text-[#0ea5e9]' },
+  { icon: 'download', label: 'Ekspor', color: 'text-[#003159]' },
+];
 
+export const SubNavRibbon: React.FC<SubNavRibbonProps> = ({ currentStep, onNavigate }) => {
   return (
-    <div className="sticky top-[108px] z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-[#cbd5e1]/40 no-print">
-      <div className="max-w-[1400px] mx-auto px-6 py-2.5 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="px-2 py-0.5 rounded bg-[#003159] text-white font-['JetBrains_Mono'] text-[11px] font-semibold tracking-wider uppercase">
-            MODUL 04
-          </span>
-          <h1 className="font-['Space_Grotesk'] font-bold text-lg text-[#003159]">
-            Tegangan Permukaan Cairan &amp; Adsorpsi Gibbs
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {anchors.map((item) => {
-            const isActive = activeSection === item.id;
-            if (item.isButton) {
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate(item.id)}
-                  className="px-3 py-1 rounded text-white bg-[#003159] hover:bg-[#0e487a] transition-all font-['JetBrains_Mono'] text-xs flex items-center gap-1 shadow-sm font-semibold active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-sm">download</span>
-                  {item.label}
-                </button>
-              );
-            }
+    <div className="sticky top-14 z-40 bg-white border-b border-[#cbd5e1]/50 shadow-sm no-print">
+      <div className="max-w-[1400px] mx-auto px-4">
+        {/* Step tabs */}
+        <div className="flex items-stretch overflow-x-auto">
+          {STEPS.map((step, i) => {
+            const isDone = i < currentStep;
+            const isActive = i === currentStep;
             return (
               <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`px-3 py-1 rounded transition-colors font-['JetBrains_Mono'] text-xs flex items-center gap-1.5 ${
+                key={i}
+                onClick={() => onNavigate(i)}
+                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all whitespace-nowrap font-['JetBrains_Mono'] text-xs font-medium ${
                   isActive
-                    ? 'bg-[#dce9ff] text-[#003159] font-bold'
-                    : 'text-[#0b1c30] hover:bg-[#dce9ff]/60'
+                    ? 'border-[#003159] text-[#003159] bg-[#eff4ff]/60'
+                    : isDone
+                    ? 'border-[#0D9488] text-[#0D9488] hover:bg-[#f0fdf9]'
+                    : 'border-transparent text-[#94a3b8] hover:text-[#64748b] hover:border-[#cbd5e1]'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${item.dotColor}`}></span>
-                {item.label}
+                {isDone ? (
+                  <span className="material-symbols-outlined text-sm text-[#0D9488]">check_circle</span>
+                ) : (
+                  <span className={`material-symbols-outlined text-sm ${isActive ? 'text-[#003159]' : 'text-[#cbd5e1]'}`}>
+                    {step.icon}
+                  </span>
+                )}
+                <span className="hidden sm:inline">{i + 1}. {step.label}</span>
+                <span className="sm:hidden">{i + 1}</span>
               </button>
             );
           })}

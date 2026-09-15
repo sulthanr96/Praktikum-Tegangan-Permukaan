@@ -168,7 +168,7 @@ export function generateCSV(
   const gammaAir = (cal.gammaAir !== undefined && cal.gammaAir > 0)
     ? cal.gammaAir
     : getStandardWaterGamma(cal.tKelvin);
-  let csv = 'Departemen Kimia Fisik UI - Praktikum Tegangan Permukaan Cairan & Adsorpsi Gibbs\n';
+  let csv = 'Praktikum Tegangan Permukaan Cairan & Adsorpsi Gibbs\n';
   csv += `Zat Uji,${sub.name}\n`;
   csv += `Suhu (K),${cal.tKelvin},V Piknometer (mL),${cal.vPikno}\n`;
   csv += `Massa Pikno Kosong (g),${cal.mKosong},h Air (cm),${cal.hAir},Gamma Air Baku (mN/m),${gammaAir.toFixed(2)}\n\n`;
@@ -201,9 +201,9 @@ export function generateMarkdown(
 
 export const INITIAL_CALIBRATION: GlobalCalibration = {
   vPikno: 5.000,
-  mKosong: 14.3210,
-  mAir: 19.3060,
-  hAir: 2.95,
+  mKosong: 0,
+  mAir: 0,
+  hAir: 0,
   tKelvin: 298.15,
   gammaAir: 71.97,
 };
@@ -218,8 +218,8 @@ export const INITIAL_SUBSTANCES: Record<string, SubstanceInfo> = {
     type: 'electrolyte',
     molarMass: 95.21,
     concentrations: [0.02, 0.04, 0.06, 0.08, 0.10],
-    mPikno: [19.3190, 19.3325, 19.3458, 19.3592, 19.3730],
-    hCapillary: [2.95, 2.96, 2.97, 2.98, 2.99],
+    mPikno: [0, 0, 0, 0, 0],
+    hCapillary: [0, 0, 0, 0, 0],
     description: 'Elektrolit anorganik pekat. Menunjukkan fenomena adsorpsi negatif terhadap antarmuka udara-air.',
   },
   detergen: {
@@ -229,23 +229,23 @@ export const INITIAL_SUBSTANCES: Record<string, SubstanceInfo> = {
     badgeClass: 'text-fluid-teal',
     icon: 'bubble_chart',
     type: 'commercial_surfactant',
-    molarMass: 300.0,
+    molarMass: 288.38,
     concentrations: [0.02, 0.04, 0.06, 0.08, 0.10],
-    mPikno: [19.3080, 19.3105, 19.3130, 19.3155, 19.3180],
-    hCapillary: [2.15, 1.82, 1.58, 1.45, 1.38],
-    description: 'Campuran surfaktan aktif & builder. Penurunan tegangan signifikan pada konsentrasi rendah.',
+    mPikno: [0, 0, 0, 0, 0],
+    hCapillary: [0, 0, 0, 0, 0],
+    description: 'Campuran surfaktan kompleks. Umumnya membentuk misel dan mendominasi antarmuka secara ekstensif.',
   },
   sds: {
     id: 'sds',
-    name: 'Natrium Dodesil Sulfat (SDS)',
-    badgeLabel: '3. Natrium Dodesil Sulfat (SDS)',
+    name: 'Sodium Dodecyl Sulfate (SDS)',
+    badgeLabel: '3. SDS (Sodium Dodecyl Sulfate)',
     badgeClass: 'text-surfactant-purple',
-    icon: 'scatter_plot',
+    icon: 'science',
     type: 'anionic_surfactant',
     molarMass: 288.38,
     concentrations: [0.02, 0.04, 0.06, 0.08, 0.10],
-    mPikno: [19.3090, 19.3120, 19.3145, 19.3175, 19.3200],
-    hCapillary: [1.98, 1.62, 1.35, 1.22, 1.15],
-    description: 'Surfaktan anionik murni standar. Memiliki inflection penanda daerah kritis miselisasi (CMC).',
+    mPikno: [0, 0, 0, 0, 0],
+    hCapillary: [0, 0, 0, 0, 0],
+    description: 'Surfaktan anionik murni standar. Memiliki kurva tegangan permukaan yang tajam pada konsentrasi rendah.',
   },
 };
