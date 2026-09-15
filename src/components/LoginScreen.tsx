@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FlaskConical, LogIn } from 'lucide-react';
 
 interface LoginScreenProps {
   onLoginSuccess: (role: string, username: string) => void;
@@ -38,8 +39,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 selection:bg-[#dce9ff] selection:text-[#003159]">
       <div className="bg-white p-8 rounded-2xl shadow-xl border border-[#cbd5e1]/40 w-full max-w-md">
         <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="p-3 rounded-xl bg-[#dce9ff] text-[#003159]">
-            <span className="material-symbols-outlined text-4xl">science</span>
+          <div className="p-3 rounded-2xl bg-[#dce9ff] text-[#003159] shadow-sm flex items-center justify-center">
+            <FlaskConical className="w-10 h-10 text-[#003159]" />
           </div>
           <div className="text-center">
             <h1 className="font-['Space_Grotesk'] font-bold text-2xl text-[#003159] tracking-tight">
@@ -86,7 +87,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             className="w-full bg-[#003159] text-white py-3 rounded-lg font-['JetBrains_Mono'] text-sm font-bold hover:bg-[#0e487a] transition-all disabled:opacity-50 mt-4 flex items-center justify-center gap-2 shadow-sm"
           >
             {loading ? 'Memeriksa...' : 'Masuk ke Kalkulator'}
-            {!loading && <span className="material-symbols-outlined text-sm">login</span>}
+            {!loading && <LogIn className="w-4 h-4" />}
           </button>
         </form>
       </div>

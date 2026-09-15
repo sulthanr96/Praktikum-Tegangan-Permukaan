@@ -63,25 +63,31 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/users', async (req, res) => {
-  const { adminUser, adminPass, newUsername, newPassword } = req.body;
+  const { adminUser, adminPass, newUsername, newPassword, username, password } = req.body;
+  const targetUsername = (newUsername || username || '').trim();
+  const targetPassword = (newPassword || password || '').trim();
+
   if (adminUser !== 'admin' || adminPass !== '1238') {
-    return res.status(403).json({ error: 'Unauthorized' });
+    return res.status(403).json({ error: 'Unauthorized: Akses admin ditolak' });
   }
-  if (!newUsername || !newPassword) return res.status(400).json({ error: 'Missing fields' });
+  if (!targetUsername || !targetPassword) {
+    return res.status(400).json({ error: 'Username dan password wajib diisi!' });
+  }
 
   try {
-    const existing = await User.findOne({ username: newUsername });
+    const existing = await User.findOne({ username: targetUsername });
     if (existing) {
-      existing.password = newPassword;
+      existing.password = targetPassword;
       await existing.save();
-      return res.json({ success: true, message: 'User updated' });
+      return res.json({ success: true, message: `Password peserta "${targetUsername}" berhasil diperbarui!` });
     } else {
-      const newUser = new User({ username: newUsername, password: newPassword });
+      const newUser = new User({ username: targetUsername, password: targetPassword });
       await newUser.save();
-      return res.json({ success: true, message: 'User created' });
+      return res.json({ success: true, message: `Peserta "${targetUsername}" berhasil ditambahkan!` });
     }
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error saving user:', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
   }
 });
 
@@ -94,12 +100,14 @@ app.get('/api/auth/users', async (req, res) => {
     const users = await User.find({}, 'username');
     res.json({ success: true, users });
   } catch (err) {
+    console.error('Error fetching users:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 app.delete('/api/auth/users/:username', async (req, res) => {
-  const { adminUser, adminPass } = req.body;
+  const adminUser = req.body?.adminUser || req.query?.adminUser;
+  const adminPass = req.body?.adminPass || req.query?.adminPass;
   if (adminUser !== 'admin' || adminPass !== '1238') {
     return res.status(403).json({ error: 'Unauthorized' });
   }
@@ -107,6 +115,7 @@ app.delete('/api/auth/users/:username', async (req, res) => {
     await User.deleteOne({ username: req.params.username });
     res.json({ success: true, message: 'User deleted' });
   } catch (err) {
+    console.error('Error deleting user:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
