@@ -49,51 +49,48 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
 
     return (
       <div key={sub.id} className="mb-6 border-b border-gray-300 pb-4">
-        <h4 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-4 tracking-wide">
+        <h4 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-2 tracking-wide">
           {romanStr}. LARUTAN {subName}
         </h4>
+        <p className="text-xs text-slate-500 italic mb-4 ml-2">
+          *Catatan: Yang wajib dihitung 0,02 M dan 0,10 M saja. Untuk sisanya dapat juga dituliskan atau pun tidak, opsional :)
+        </p>
 
         <div className="ml-2 space-y-5 text-sm">
           {/* a. Densitas */}
           <div>
             <h4 className="font-bold text-slate-900 mb-1">a. Perhitungan Densitas (ρ)</h4>
             <div className="bg-slate-50 border border-slate-300 p-2 rounded mb-2 font-mono text-xs inline-block">
-              <span className="font-bold">Rumus:</span> ρ = <Fraction num="m_wadah - m_kosong" den="V_pikno" />
+              <span className="font-bold">Rumus:</span> ρ = <Fraction num={<>m<sub>wadah</sub> - m<sub>kosong</sub></>} den={<>V<sub>pikno</sub></>} />
             </div>
             <ul className="list-disc ml-5 space-y-2 font-mono text-xs">
               <li>
-                <strong>Konsentrasi 0.02 M (Wajib):</strong><br />
+                <strong>Konsentrasi 0.02 M:</strong><br />
                 ρ = <Fraction num={`${sub.mPikno[0].toFixed(4)} g - ${cal.mKosong.toFixed(4)} g`} den={`${cal.vPikno.toFixed(2)} mL`} /> = <strong>{rFirst.rho.toFixed(4)} g/cm³</strong>
               </li>
               <li>
-                <strong>Konsentrasi 0.10 M (Wajib):</strong><br />
+                <strong>Konsentrasi 0.10 M:</strong><br />
                 ρ = <Fraction num={`${sub.mPikno[4].toFixed(4)} g - ${cal.mKosong.toFixed(4)} g`} den={`${cal.vPikno.toFixed(2)} mL`} /> = <strong>{rLast.rho.toFixed(4)} g/cm³</strong>
               </li>
             </ul>
-            <div className="mt-2 text-xs italic text-slate-600 bg-amber-50 p-1.5 rounded border border-amber-200">
-              💡 <em>Catatan: Hitung untuk 3 konsentrasi lainnya (0.04 M, 0.06 M, 0.08 M) menggunakan rumus yang sama (opsional, kalau nggak juga gapapa yaa 😊).</em>
-            </div>
           </div>
 
           {/* b. Tegangan Permukaan */}
           <div>
             <h4 className="font-bold text-slate-900 mb-1">b. Perhitungan Tegangan Permukaan (γ)</h4>
             <div className="bg-slate-50 border border-slate-300 p-2 rounded mb-2 font-mono text-xs inline-block">
-              <span className="font-bold">Rumus:</span> γ = <Fraction num="ρ × h" den="ρ_air × h_air" /> × γ_air
+              <span className="font-bold">Rumus:</span> γ = <Fraction num="ρ × h" den={<>ρ<sub>air</sub> × h<sub>air</sub></>} /> × γ<sub>air</sub>
             </div>
             <ul className="list-disc ml-5 space-y-2 font-mono text-xs">
               <li>
-                <strong>Konsentrasi 0.02 M (Wajib):</strong><br />
+                <strong>Konsentrasi 0.02 M:</strong><br />
                 γ = <Fraction num={`${rFirst.rho.toFixed(4)} g/cm³ × ${rFirst.hCapillary.toFixed(2)} cm`} den={`${rhoAir.toFixed(4)} g/cm³ × ${cal.hAir.toFixed(2)} cm`} /> × {gammaAir.toFixed(2)} mN/m = <strong>{rFirst.gamma.toFixed(2)} mN/m</strong>
               </li>
               <li>
-                <strong>Konsentrasi 0.10 M (Wajib):</strong><br />
+                <strong>Konsentrasi 0.10 M:</strong><br />
                 γ = <Fraction num={`${rLast.rho.toFixed(4)} g/cm³ × ${rLast.hCapillary.toFixed(2)} cm`} den={`${rhoAir.toFixed(4)} g/cm³ × ${cal.hAir.toFixed(2)} cm`} /> × {gammaAir.toFixed(2)} mN/m = <strong>{rLast.gamma.toFixed(2)} mN/m</strong>
               </li>
             </ul>
-            <div className="mt-2 text-xs italic text-slate-600 bg-amber-50 p-1.5 rounded border border-amber-200">
-              💡 <em>Catatan: Hitung untuk 3 konsentrasi lainnya menggunakan rumus yang sama (opsional, kalau nggak juga gapapa yaa 😊).</em>
-            </div>
           </div>
 
           {/* c. Gradien */}
@@ -116,17 +113,14 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
             </div>
             <ul className="list-disc ml-5 space-y-2 font-mono text-xs">
               <li>
-                <strong>Konsentrasi 0.02 M (Wajib):</strong><br />
+                <strong>Konsentrasi 0.02 M:</strong><br />
                 Γ = - <Fraction num="0.02 mol/L" den={`8.314 × ${cal.tKelvin}`} /> × ({rFirst.dGammaDC.toFixed(2)}) × 10⁻⁶ = <strong>{rFirst.surfaceExcessMicro.toFixed(3)} × 10⁻⁶ mol/m²</strong>
               </li>
               <li>
-                <strong>Konsentrasi 0.10 M (Wajib):</strong><br />
+                <strong>Konsentrasi 0.10 M:</strong><br />
                 Γ = - <Fraction num="0.10 mol/L" den={`8.314 × ${cal.tKelvin}`} /> × ({rLast.dGammaDC.toFixed(2)}) × 10⁻⁶ = <strong>{rLast.surfaceExcessMicro.toFixed(3)} × 10⁻⁶ mol/m²</strong>
               </li>
             </ul>
-            <div className="mt-2 text-xs italic text-slate-600 bg-amber-50 p-1.5 rounded border border-amber-200">
-              💡 <em>Catatan: Hitung untuk 3 konsentrasi lainnya menggunakan rumus yang sama (opsional, kalau nggak juga gapapa yaa 😊).</em>
-            </div>
           </div>
 
           {/* Kotak Placeholder Tempel Grafik */}
@@ -179,7 +173,7 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
       <div className="mb-8">
         <div className="bg-slate-800 text-white px-3 py-1.5 font-bold text-xs uppercase tracking-wider mb-4 rounded-t flex items-center justify-between">
           <span>Bagian I: Jurnal Praktikum (Pra-Lab)</span>
-          <span className="text-[10px] font-normal normal-case opacity-90">Telah dikerjakan di lembar pra-lab</span>
+          <span className="text-[10px] font-normal normal-case opacity-90">Telah dikerjakan di jurnal saja</span>
         </div>
 
         <div className="space-y-4 text-xs ml-1">
@@ -193,35 +187,35 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
           <div>
             <span className="font-bold text-slate-900 block mb-1">B. Tujuan Percobaan</span>
             <div className="border border-slate-300 rounded p-2 bg-slate-50 text-slate-400 italic min-h-[40px] flex items-center justify-center">
-              (Telah dikerjakan di lembar jurnal pra-lab)
+              (Telah dikerjakan di jurnal saja)
             </div>
           </div>
 
           <div>
             <span className="font-bold text-slate-900 block mb-1">C. Dasar Teori</span>
             <div className="border border-slate-300 rounded p-2 bg-slate-50 text-slate-400 italic min-h-[40px] flex items-center justify-center">
-              (Telah dikerjakan di lembar jurnal pra-lab)
+              (Telah dikerjakan di jurnal saja)
             </div>
           </div>
 
           <div>
             <span className="font-bold text-slate-900 block mb-1">D. Alat dan Bahan</span>
             <div className="border border-slate-300 rounded p-2 bg-slate-50 text-slate-400 italic min-h-[40px] flex items-center justify-center">
-              (Telah dikerjakan di lembar jurnal pra-lab)
+              (Telah dikerjakan di jurnal saja)
             </div>
           </div>
 
           <div>
             <span className="font-bold text-slate-900 block mb-1">E. MSDS (Material Safety Data Sheet)</span>
             <div className="border border-slate-300 rounded p-2 bg-slate-50 text-slate-400 italic min-h-[40px] flex items-center justify-center">
-              (Telah dikerjakan di lembar jurnal pra-lab — Akuades, MgCl₂, SDS, Deterjen)
+              (Telah dikerjakan di jurnal saja — Akuades, MgCl₂, SDS, Deterjen)
             </div>
           </div>
 
           <div>
             <span className="font-bold text-slate-900 block mb-1">F. Cara Kerja (Diagram Alir)</span>
             <div className="border border-slate-300 rounded p-2 bg-slate-50 text-slate-400 italic min-h-[40px] flex items-center justify-center">
-              (Telah dikerjakan di lembar jurnal pra-lab)
+              (Telah dikerjakan di jurnal saja)
             </div>
           </div>
         </div>
@@ -235,7 +229,6 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
       <div>
         <div className="bg-slate-800 text-white px-3 py-1.5 font-bold text-xs uppercase tracking-wider mb-4 rounded-t flex items-center justify-between">
           <span>Bagian II: Laporan Praktikum (Pengolahan Data &amp; Pembahasan)</span>
-          <span className="text-[10px] font-normal normal-case opacity-90">Salin &amp; tempelkan lampiran pada lembar ini</span>
         </div>
 
         {/* G. DATA PENGAMATAN */}
@@ -243,9 +236,6 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide border-b border-slate-300 pb-1 mb-2">
             G. Data Pengamatan
           </h3>
-          <p className="text-xs text-slate-600 mb-3 italic">
-            *Petunjuk: Gunting tabel data dari <strong>Lembar Lampiran Tabel &amp; Grafik</strong> dan tempelkan pada kotak yang disediakan di bawah ini:
-          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
             <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg py-2 px-3 text-center flex flex-col items-center justify-center break-inside-avoid">
@@ -276,29 +266,29 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
             </h4>
             <div className="ml-2 space-y-4 text-sm">
               <div>
-                <h5 className="font-bold text-slate-900 mb-1">a. Perhitungan Massa Air (m_air)</h5>
+                <h5 className="font-bold text-slate-900 mb-1">a. Perhitungan Massa Air (m<sub>air</sub>)</h5>
                 <div className="bg-slate-50 border border-slate-300 p-2 rounded mb-1 font-mono text-xs inline-block">
-                  <span className="font-bold">Rumus:</span> m_air = m_pikno+air - m_kosong
+                  <span className="font-bold">Rumus:</span> m<sub>air</sub> = m<sub>pikno+air</sub> - m<sub>kosong</sub>
                 </div>
                 <p className="font-mono text-xs ml-2">
-                  m_air = {cal.mAir.toFixed(4)} g - {cal.mKosong.toFixed(4)} g = <strong>{mAir.toFixed(4)} g</strong>
+                  m<sub>air</sub> = {cal.mAir.toFixed(4)} g - {cal.mKosong.toFixed(4)} g = <strong>{mAir.toFixed(4)} g</strong>
                 </p>
               </div>
 
               <div>
-                <h5 className="font-bold text-slate-900 mb-1">b. Perhitungan Densitas Air (ρ_air)</h5>
+                <h5 className="font-bold text-slate-900 mb-1">b. Perhitungan Densitas Air (ρ<sub>air</sub>)</h5>
                 <div className="bg-slate-50 border border-slate-300 p-2 rounded mb-1 font-mono text-xs inline-block">
-                  <span className="font-bold">Rumus:</span> ρ_air = <Fraction num="m_air" den="V_pikno" />
+                  <span className="font-bold">Rumus:</span> ρ<sub>air</sub> = <Fraction num={<>m<sub>air</sub></>} den={<>V<sub>pikno</sub></>} />
                 </div>
                 <p className="font-mono text-xs ml-2 mt-1">
-                  ρ_air = <Fraction num={`${mAir.toFixed(4)} g`} den={`${cal.vPikno.toFixed(2)} mL`} /> = <strong>{rhoAir.toFixed(4)} g/cm³</strong>
+                  ρ<sub>air</sub> = <Fraction num={`${mAir.toFixed(4)} g`} den={`${cal.vPikno.toFixed(2)} mL`} /> = <strong>{rhoAir.toFixed(4)} g/cm³</strong>
                 </p>
               </div>
 
               <div>
-                <h5 className="font-bold text-slate-900 mb-1">c. Tegangan Permukaan Air Standar (γ_air)</h5>
+                <h5 className="font-bold text-slate-900 mb-1">c. Tegangan Permukaan Air Standar (γ<sub>air</sub>)</h5>
                 <p className="font-mono text-xs ml-2">
-                  Pada suhu praktikum <strong>{cal.tKelvin} K</strong>: γ_air = <strong>{gammaAir.toFixed(2)} mN/m</strong>
+                  Pada suhu praktikum <strong>{cal.tKelvin} K</strong>: γ<sub>air</sub> = <strong>{gammaAir.toFixed(2)} mN/m</strong>
                 </p>
               </div>
             </div>
@@ -326,7 +316,7 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
           <ol className="list-decimal ml-5 space-y-1 text-xs text-slate-700">
             <li>Bagaimana tren tegangan permukaan terhadap konsentrasi untuk masing-masing larutan? (sekilas saja)</li>
             <li>Mengapa surfaktan (SDS &amp; detergen) lebih signifikan menurunkan γ dibanding MgCl₂?</li>
-            <li>Apa makna fisik dari nilai Γ_maks dan C_CMC dari isoterm Gibbs?</li>
+            <li>Apa makna fisik dari nilai Γ<sub>maks</sub> dan C<sub>CMC</sub> dari isoterm Gibbs?</li>
             <li>Faktor apa yang mempengaruhi keakuratan hasil (sumber error eksperimen)?</li>
           </ol>
         </div>

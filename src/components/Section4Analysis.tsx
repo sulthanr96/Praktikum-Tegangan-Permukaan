@@ -323,7 +323,7 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
               {/* Reference pure water horizontal dash */}
               <line stroke="#727780" strokeDasharray="4 2" strokeWidth="1" x1="50" x2="430" y1={mapY1(71.97)} y2={mapY1(71.97)} />
               <text fill="#727780" fontFamily="JetBrains Mono" fontSize="9" x="375" y={mapY1(71.97) - 4}>
-                γ_air baku
+                γ air baku
               </text>
 
               {/* Curve path */}
