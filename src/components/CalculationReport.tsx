@@ -44,11 +44,14 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
     const rFirst = rows[0]; // 0.02 M
     const rLast = rows[4];  // 0.10 M
 
+    const romanStr = romanIndex === 2 ? 'II' : romanIndex === 3 ? 'III' : 'IV';
+    const subName = sub.id === 'mgcl2' ? 'MgCl₂' : sub.name.toUpperCase();
+
     return (
       <div key={sub.id} className="mb-6 border-b border-gray-300 pb-4">
-        <h3 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-4 uppercase tracking-wide">
-          {romanIndex}. Larutan {sub.name}
-        </h3>
+        <h4 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-4 tracking-wide">
+          {romanStr}. LARUTAN {subName}
+        </h4>
 
         <div className="ml-2 space-y-5 text-sm">
           {/* a. Densitas */}
@@ -268,8 +271,8 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
 
           {/* 1. Air Baku */}
           <div className="mb-6 border-b border-gray-300 pb-4">
-            <h4 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-4 uppercase tracking-wide">
-              I. Air (Pelarut Referensi)
+            <h4 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-4 tracking-wide">
+              I. AIR
             </h4>
             <div className="ml-2 space-y-4 text-sm">
               <div>
