@@ -99,17 +99,17 @@ export const Section5Export: React.FC<Section5ExportProps> = ({
           </button>
         </div>
 
-        {/* PDF Laporan */}
+        {/* PDF Laporan Utuh */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-[#cbd5e1]/60 flex flex-col justify-between gap-4 hover:shadow-md transition-shadow">
           <div className="flex flex-col gap-2">
             <div className="w-12 h-12 rounded-lg bg-[#eff4ff] flex items-center justify-center text-[#00687a] border border-[#cbd5e1]/40">
               <span className="material-symbols-outlined text-2xl">picture_as_pdf</span>
             </div>
             <h3 className="font-['Space_Grotesk'] font-bold text-lg text-[#003159]">
-              Laporan PDF Komprehensif
+              Panduan Laporan Utuh (A–K)
             </h3>
             <p className="font-['Inter'] text-xs text-[#42474f] leading-relaxed">
-              Kompilasi laporan tercetak berisi lembar perhitungan manual langkah demi langkah untuk setiap persamaan termodinamika.
+              Format gambaran utuh laporan resmi (Bagian A s.d. K) berisi contoh perhitungan langkah demi langkah (konsentrasi awal &amp; akhir), interpretasi grafik otomatis, dan panduan pembahasan untuk disalin ke buku laporan fisik.
             </p>
           </div>
           <button
@@ -118,21 +118,21 @@ export const Section5Export: React.FC<Section5ExportProps> = ({
             type="button"
           >
             <span className="material-symbols-outlined text-base">print</span>
-            Cetak / Simpan PDF
+            Cetak Panduan Laporan (PDF)
           </button>
         </div>
 
-        {/* PDF Grafik */}
+        {/* Lembar Tempel Tabel & Grafik */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-[#cbd5e1]/60 flex flex-col justify-between gap-4 hover:shadow-md transition-shadow">
           <div className="flex flex-col gap-2">
             <div className="w-12 h-12 rounded-lg bg-[#fef2f2] flex items-center justify-center text-[#e11d48] border border-[#f43f5e]/20">
-              <span className="material-symbols-outlined text-2xl">analytics</span>
+              <span className="material-symbols-outlined text-2xl">content_cut</span>
             </div>
             <h3 className="font-['Space_Grotesk'] font-bold text-lg text-[#003159]">
-              Export 6 Grafik (PDF)
+              Lembar Tabel &amp; 6 Grafik (Siap Gunting)
             </h3>
             <p className="font-['Inter'] text-xs text-[#42474f] leading-relaxed">
-              Ekspor khusus untuk 6 kurva grafik (Tegangan Permukaan &amp; Isoterm Gibbs) dari 3 zat terlarut sekaligus dalam satu berkas PDF siap cetak.
+              Lembar lampiran lengkap berisi 4 tabel data pengamatan/kalkulasi serta 6 grafik bergaris potong, siap dicetak untuk digunting dan ditempelkan langsung pada buku laporan fisik.
             </p>
           </div>
           <button
@@ -141,7 +141,7 @@ export const Section5Export: React.FC<Section5ExportProps> = ({
             type="button"
           >
             <span className="material-symbols-outlined text-base">auto_graph</span>
-            Cetak Grafik (PDF)
+            Cetak Lembar Tempel (PDF)
           </button>
         </div>
       </div>
