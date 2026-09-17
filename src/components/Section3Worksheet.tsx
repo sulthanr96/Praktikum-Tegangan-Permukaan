@@ -105,7 +105,7 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
             <label className="font-['JetBrains_Mono'] text-xs text-[#42474f] font-semibold" htmlFor="cal-mkosong">
               Massa Pikno Kosong (g)
             </label>
-            <div className="flex items-center bg-[#eff4ff] px-3 py-2 rounded-lg border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0D9488]/40 transition-all">
+            <div className="flex items-center bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-400 focus-within:bg-yellow-100 focus-within:ring-2 focus-within:ring-yellow-500 transition-all">
               <NumericInput
                 className="w-full bg-transparent font-['JetBrains_Mono'] text-sm text-[#003159] font-bold focus:outline-none"
                 fallbackValue={14.3210}
@@ -123,7 +123,7 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
             <label className="font-['JetBrains_Mono'] text-xs text-[#42474f] font-semibold" htmlFor="cal-mair">
               Massa Pikno + Air (g)
             </label>
-            <div className="flex items-center bg-[#eff4ff] px-3 py-2 rounded-lg border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0D9488]/40 transition-all">
+            <div className="flex items-center bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-400 focus-within:bg-yellow-100 focus-within:ring-2 focus-within:ring-yellow-500 transition-all">
               <NumericInput
                 className="w-full bg-transparent font-['JetBrains_Mono'] text-sm text-[#003159] font-bold focus:outline-none"
                 fallbackValue={19.3060}
@@ -141,7 +141,7 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
             <label className="font-['JetBrains_Mono'] text-xs text-[#42474f] font-semibold" htmlFor="cal-hair">
               Tinggi Kapiler h<sub>air</sub> (cm)
             </label>
-            <div className="flex items-center bg-[#eff4ff] px-3 py-2 rounded-lg border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0D9488]/40 transition-all">
+            <div className="flex items-center bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-400 focus-within:bg-yellow-100 focus-within:ring-2 focus-within:ring-yellow-500 transition-all">
               <NumericInput
                 className="w-full bg-transparent font-['JetBrains_Mono'] text-sm text-[#003159] font-bold focus:outline-none"
                 fallbackValue={2.95}
@@ -305,8 +305,6 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
                 <th className="py-3 px-4 whitespace-nowrap">Konsentrasi (M)</th>
                 <th className="py-3 px-4 whitespace-nowrap">Massa Pikno + Larutan (g)</th>
                 <th className="py-3 px-4 whitespace-nowrap">Tinggi Kapiler h (cm)</th>
-                <th className="py-3 px-4 whitespace-nowrap">Densitas Terhitung ρ (g/cm³)</th>
-                <th className="py-3 px-4 text-center whitespace-nowrap">Status Titik</th>
               </tr>
             </thead>
             <tbody className="font-['JetBrains_Mono'] text-sm divide-y divide-[#cbd5e1]/30">
@@ -314,7 +312,7 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
                 <tr key={`${currentSubstanceKey}-${row.concentration}`} className="hover:bg-[#eff4ff]/60 transition-colors border-b border-[#cbd5e1]/40">
                   <td className="py-3 px-4 font-bold text-[#003159]">{row.concentration.toFixed(2)} M</td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center bg-[#eff4ff] px-2.5 py-2 rounded-md border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-1 focus-within:ring-[#0D9488] transition-all min-w-[120px] max-w-[150px]">
+                    <div className="flex items-center bg-yellow-50 px-2.5 py-2 rounded-md border border-yellow-400 focus-within:bg-yellow-100 focus-within:ring-1 focus-within:ring-yellow-500 transition-all min-w-[120px] max-w-[150px]">
                       <NumericInput
                         className="w-full bg-transparent font-['JetBrains_Mono'] text-xs sm:text-sm text-[#003159] font-semibold focus:outline-none"
                         fallbackValue={0}
@@ -328,7 +326,7 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center bg-[#eff4ff] px-2.5 py-2 rounded-md border border-[#cbd5e1]/40 focus-within:bg-white focus-within:ring-1 focus-within:ring-[#0D9488] transition-all min-w-[120px] max-w-[130px]">
+                    <div className="flex items-center bg-yellow-50 px-2.5 py-2 rounded-md border border-yellow-400 focus-within:bg-yellow-100 focus-within:ring-1 focus-within:ring-yellow-500 transition-all min-w-[120px] max-w-[130px]">
                       <NumericInput
                         className="w-full bg-transparent font-['JetBrains_Mono'] text-xs sm:text-sm text-[#003159] font-semibold focus:outline-none"
                         fallbackValue={0}
@@ -340,13 +338,6 @@ export const Section3Worksheet: React.FC<Section3WorksheetProps> = ({
                       />
                       <span className="font-['JetBrains_Mono'] text-[11px] text-[#42474f] shrink-0 ml-1">cm</span>
                     </div>
-                  </td>
-                  <td className="py-3 px-4 text-[#0b1c30] font-semibold">{row.rho.toFixed(4)}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#eff4ff] text-[#059669] font-semibold border border-[#059669]/20 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>
-                      Valid
-                    </span>
                   </td>
                 </tr>
               ))}
