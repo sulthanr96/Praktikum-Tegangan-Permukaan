@@ -205,7 +205,7 @@ export const INITIAL_CALIBRATION: GlobalCalibration = {
   mAir: 0,
   hAir: 0,
   tKelvin: 298.15,
-  gammaAir: 71.97,
+  gammaAir: 72.27,
 };
 
 export const INITIAL_SUBSTANCES: Record<string, SubstanceInfo> = {
