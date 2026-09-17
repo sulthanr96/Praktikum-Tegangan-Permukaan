@@ -31,11 +31,11 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
     const gLast = rows[4]?.gamma.toFixed(2);
 
     if (sub.type === 'electrolyte') {
-      return `Tegangan permukaan larutan MgCl₂ terpantau relatif stabil atau sedikit meningkat (${gFirst} mN/m ke ${gLast} mN/m), menghasilkan gradien dγ/dC ≥ 0 dan surface excess bertanda negatif (Γ < 0). Fenomena ini menunjukkan adanya desorpsi negatif (negative adsorption / efek Jones-Ray), di mana ion terhidrasi Mg²⁺ dan Cl⁻ lebih terstabilkan di fasa ruah (bulk) dibanding di antarmuka udara-air.`;
+      return `Sifat elektrolit MgCl₂ menaikkan tegangan permukaan (${gFirst} mN/m ke ${gLast} mN/m). Nilai dγ/dC positif menghasilkan surface excess negatif (Γ < 0), menandakan desorpsi negatif ion di antarmuka udara-air.`;
     } else if (sub.type === 'anionic_surfactant') {
-      return `Penambahan konsentrasi SDS menyebabkan penurunan tegangan permukaan yang tajam (dari ${gFirst} mN/m turun drastis ke ${gLast} mN/m), menghasilkan gradien dγ/dC < 0 dan surface excess positif (Γ > 0) hingga mencapai saturasi ${maxExcess.toFixed(2)} μmol/m². Hal ini menandakan akumulasi aktif gugus amfifilik SDS di antarmuka membentuk monolayer rapat sebelum mencapai Critical Micelle Concentration (CMC).`;
+      return `SDS menurunkan tegangan permukaan secara signifikan (${gFirst} mN/m ke ${gLast} mN/m). Nilai dγ/dC negatif menghasilkan surface excess positif (Γ > 0), menandakan pembentukan monolayer surfaktan rapat di antarmuka.`;
     } else {
-      return `Larutan deterjen komersial memperlihatkan penurunan progresif tegangan permukaan (dari ${gFirst} mN/m ke ${gLast} mN/m) dengan gradien dγ/dC < 0 dan surface excess positif (Γ_maks = ${maxExcess.toFixed(2)} μmol/m²). Profil kurva mencerminkan karakteristik campuran surfaktan aktif (LAS) dan builder penstabil yang secara efektif mereduksi energi kohesi permukaan air.`;
+      return `Deterjen komersial menurunkan tegangan permukaan progresif (${gFirst} mN/m ke ${gLast} mN/m) dengan dγ/dC negatif dan surface excess positif, mencerminkan adsorpsi efektif surfaktan pada permukaan air.`;
     }
   };
 
@@ -45,7 +45,7 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
     const rLast = rows[4];  // 0.10 M
 
     return (
-      <div key={sub.id} className="mb-8 border-b border-gray-300 pb-6 break-inside-avoid">
+      <div key={sub.id} className="mb-6 border-b border-gray-300 pb-4">
         <h3 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-4 uppercase tracking-wide">
           {romanIndex}. Larutan {sub.name}
         </h3>
@@ -244,26 +244,18 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
             *Petunjuk: Gunting tabel data dari <strong>Lembar Lampiran Tabel &amp; Grafik</strong> dan tempelkan pada kotak yang disediakan di bawah ini:
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg p-3 text-center flex flex-col items-center justify-center min-h-[85px]">
-              <span className="text-base">✂ 📋</span>
-              <span className="font-bold text-xs text-slate-700 mt-1">Tempelkan Tabel 1: Kalibrasi Air Baku &amp; Piknometer</span>
-              <span className="text-[10px] text-slate-500 mt-0.5">(Dari Lembar Tempel Lampiran)</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg py-2 px-3 text-center flex flex-col items-center justify-center break-inside-avoid">
+              <span className="font-bold text-xs text-slate-700">✂ 📋 Tempelkan Tabel 1: Kalibrasi Air Baku &amp; Piknometer</span>
             </div>
-            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg p-3 text-center flex flex-col items-center justify-center min-h-[85px]">
-              <span className="text-base">✂ 📋</span>
-              <span className="font-bold text-xs text-slate-700 mt-1">Tempelkan Tabel 2: Data Pengamatan Larutan MgCl₂</span>
-              <span className="text-[10px] text-slate-500 mt-0.5">(Dari Lembar Tempel Lampiran)</span>
+            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg py-2 px-3 text-center flex flex-col items-center justify-center break-inside-avoid">
+              <span className="font-bold text-xs text-slate-700">✂ 📋 Tempelkan Tabel 2: Data Pengamatan Larutan MgCl₂</span>
             </div>
-            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg p-3 text-center flex flex-col items-center justify-center min-h-[85px]">
-              <span className="text-base">✂ 📋</span>
-              <span className="font-bold text-xs text-slate-700 mt-1">Tempelkan Tabel 3: Data Pengamatan Larutan Detergen</span>
-              <span className="text-[10px] text-slate-500 mt-0.5">(Dari Lembar Tempel Lampiran)</span>
+            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg py-2 px-3 text-center flex flex-col items-center justify-center break-inside-avoid">
+              <span className="font-bold text-xs text-slate-700">✂ 📋 Tempelkan Tabel 3: Data Pengamatan Larutan Detergen</span>
             </div>
-            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg p-3 text-center flex flex-col items-center justify-center min-h-[85px]">
-              <span className="text-base">✂ 📋</span>
-              <span className="font-bold text-xs text-slate-700 mt-1">Tempelkan Tabel 4: Data Pengamatan Larutan SDS</span>
-              <span className="text-[10px] text-slate-500 mt-0.5">(Dari Lembar Tempel Lampiran)</span>
+            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg py-2 px-3 text-center flex flex-col items-center justify-center break-inside-avoid">
+              <span className="font-bold text-xs text-slate-700">✂ 📋 Tempelkan Tabel 4: Data Pengamatan Larutan SDS</span>
             </div>
           </div>
         </div>
@@ -275,7 +267,7 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
           </h3>
 
           {/* 1. Air Baku */}
-          <div className="mb-8 border-b border-gray-300 pb-6">
+          <div className="mb-6 border-b border-gray-300 pb-4">
             <h4 className="text-base font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-4 uppercase tracking-wide">
               I. Air (Pelarut Referensi)
             </h4>
@@ -320,47 +312,20 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
         </div>
 
         {/* I. PEMBAHASAN */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide border-b border-slate-300 pb-1 mb-3">
+        <div className="mb-6 break-inside-avoid">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide border-b border-slate-300 pb-1 mb-2">
             I. Pembahasan
           </h3>
-          <p className="text-xs text-slate-600 mb-4 italic">
-            *Panduan diskusi ilmiah: Salin dan elaborasikan poin-poin pertanyaan kritis berikut pada laporan Anda:
+          <p className="text-xs text-slate-800 mb-2 font-medium">
+            Sertakan poin-poin berikut dalam pembahasanmu pada laporan fisik:
           </p>
 
-          <div className="space-y-4 text-xs">
-            <div className="p-3 bg-slate-50 rounded border border-slate-300">
-              <span className="font-bold text-slate-800 block mb-1">
-                1. Bagaimana tren tegangan permukaan terhadap konsentrasi untuk masing-masing larutan? (sekilas saja)
-              </span>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded border border-slate-300">
-              <span className="font-bold text-slate-800 block mb-1">
-                2. Mengapa surfaktan (SDS &amp; detergen) lebih signifikan menurunkan γ dibanding MgCl₂?
-              </span>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded border border-slate-300">
-              <span className="font-bold text-slate-800 block mb-1">
-                3. Apa makna fisik dari nilai Γ_maks dan C_CMC dari isoterm Gibbs?
-              </span>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded border border-slate-300">
-              <span className="font-bold text-slate-800 block mb-1">
-                4. Faktor apa yang mempengaruhi keakuratan hasil (sumber error eksperimen)?
-              </span>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-              <div className="border-b border-dashed border-slate-300 h-6"></div>
-            </div>
-          </div>
+          <ol className="list-decimal ml-5 space-y-1 text-xs text-slate-700">
+            <li>Bagaimana tren tegangan permukaan terhadap konsentrasi untuk masing-masing larutan? (sekilas saja)</li>
+            <li>Mengapa surfaktan (SDS &amp; detergen) lebih signifikan menurunkan γ dibanding MgCl₂?</li>
+            <li>Apa makna fisik dari nilai Γ_maks dan C_CMC dari isoterm Gibbs?</li>
+            <li>Faktor apa yang mempengaruhi keakuratan hasil (sumber error eksperimen)?</li>
+          </ol>
         </div>
 
         {/* J. KESIMPULAN */}
