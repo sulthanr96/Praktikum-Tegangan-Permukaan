@@ -1,6 +1,6 @@
 import React from 'react';
 import { SubstanceInfo, GlobalCalibration, AnalysisMode } from '../types';
-import { computeAnalysis } from '../utils/physics';
+import { computeAnalysis, calculateRhoAir } from '../utils/physics';
 import { generateChart1Svg, generateChart2Svg } from '../utils/chartRenderer';
 
 interface GraphicsReportProps {
@@ -92,6 +92,86 @@ export const GraphicsReport: React.FC<GraphicsReportProps> = ({ substances, cal,
                           <td className="border border-black p-1">{sub.hCapillary[idx].toFixed(2)}</td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* PENGOLAHAN DATA */}
+        <div className="mb-8">
+          <h3 className="font-bold uppercase mb-2 font-['Calibri',sans-serif] text-[15px]">PENGOLAHAN DATA</h3>
+          
+          {/* Kalibrasi Air Baku */}
+          <div className="mb-6 break-inside-avoid">
+            <table className="w-full max-w-4xl text-[15px] text-center border-collapse border border-black font-['Calibri',sans-serif]">
+              <tbody>
+                <tr>
+                  <td colSpan={6} className="border border-black font-bold p-1" style={{ backgroundColor: '#5B9BD5' }}>
+                    Kalibrasi Air
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-black font-bold p-1" style={{ backgroundColor: '#9CC2E5' }}>m<sub>air</sub> (g)</td>
+                  <td className="border border-black p-1">{(cal.mAir - cal.mKosong).toFixed(4)}</td>
+                  <td className="border border-black font-bold p-1" style={{ backgroundColor: '#9CC2E5' }}>ρ (g/cm³)</td>
+                  <td className="border border-black p-1">{calculateRhoAir(cal).toFixed(4)}</td>
+                  <td className="border border-black font-bold p-1" style={{ backgroundColor: '#FFFF00' }}>γ<sub>air</sub> (mN/m)</td>
+                  <td className="border border-black p-1">{cal.gammaAir.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            {substanceKeys.map((key) => {
+              const sub = substances[key];
+              const { rows } = computeAnalysis(sub, cal, mode);
+              
+              let mainColor = '';
+              let lightColor = '';
+              if (key === 'mgcl2') {
+                mainColor = '#5CD65C'; lightColor = '#99E699';
+              } else if (key === 'sds') {
+                mainColor = '#E6B89C'; lightColor = '#F2D8C9';
+              } else {
+                mainColor = '#FF99CC'; lightColor = '#FFCCE6';
+              }
+
+              return (
+                <div key={key} className="break-inside-avoid">
+                  <table className="w-full text-[15px] text-center border-collapse border border-black font-['Calibri',sans-serif]">
+                    <tbody>
+                      <tr>
+                        <td colSpan={7} className="border border-black font-bold p-1" style={{ backgroundColor: mainColor }}>
+                          Larutan {sub.name}
+                        </td>
+                      </tr>
+                      <tr style={{ backgroundColor: lightColor }}>
+                        <td className="border border-black font-bold p-1">Konsentrasi (M)</td>
+                        <td className="border border-black font-bold p-1">m<sub>larutan</sub> (g)</td>
+                        <td className="border border-black font-bold p-1">ρ (g/cm³)</td>
+                        <td className="border border-black font-bold p-1">h (cm)</td>
+                        <td className="border border-black font-bold p-1">γ (mN/m)</td>
+                        <td className="border border-black font-bold p-1">dγ/dC (mN·L/m·mol)</td>
+                        <td className="border border-black font-bold p-1">Γ (× 10⁻⁶ mol/m²)</td>
+                      </tr>
+                      {rows.map((r, idx) => {
+                        const mLarutan = sub.mPikno[idx] - cal.mKosong;
+                        return (
+                          <tr key={idx}>
+                            <td className="border border-black p-1">{r.concentration.toFixed(2)}</td>
+                            <td className="border border-black p-1">{mLarutan.toFixed(4)}</td>
+                            <td className="border border-black p-1">{r.rho.toFixed(4)}</td>
+                            <td className="border border-black p-1">{r.hCapillary.toFixed(2)}</td>
+                            <td className="border border-black p-1">{r.gamma.toFixed(2)}</td>
+                            <td className="border border-black p-1">{r.dGammaDC.toFixed(2)}</td>
+                            <td className="border border-black p-1">{r.surfaceExcessMicro.toFixed(3)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
