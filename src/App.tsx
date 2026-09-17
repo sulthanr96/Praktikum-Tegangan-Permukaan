@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GlobalCalibration, SubstanceKey, AnalysisMode, SubstanceInfo } from './types';
 import {
   INITIAL_CALIBRATION,
@@ -25,20 +25,34 @@ import { AdminPanel } from './components/AdminPanel';
 const TOTAL_STEPS = 5;
 
 export default function App() {
-  const [calibration, setCalibration] = useState<GlobalCalibration>(INITIAL_CALIBRATION);
+  const [calibration, setCalibration] = useState<GlobalCalibration>(() => {
+    const saved = localStorage.getItem('srslab_calibration');
+    return saved ? JSON.parse(saved) : INITIAL_CALIBRATION;
+  });
   const [currentSubstanceKey, setCurrentSubstanceKey] = useState<SubstanceKey>('mgcl2');
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('alurA');
-  const [substances, setSubstances] = useState<Record<string, SubstanceInfo>>(INITIAL_SUBSTANCES);
+  const [substances, setSubstances] = useState<Record<string, SubstanceInfo>>(() => {
+    const saved = localStorage.getItem('srslab_substances');
+    return saved ? JSON.parse(saved) : INITIAL_SUBSTANCES;
+  });
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [printMode, setPrintMode] = useState<'report' | 'graphics'>('report');
   const [auth, setAuth] = useState<{isLoggedIn: boolean, role: string, username: string}>({ isLoggedIn: false, role: '', username: '' });
   const [view, setView] = useState<'kalkulator' | 'admin'>('kalkulator');
 
+  useEffect(() => {
+    localStorage.setItem('srslab_calibration', JSON.stringify(calibration));
+    localStorage.setItem('srslab_substances', JSON.stringify(substances));
+  }, [calibration, substances]);
+
   const handleCalibrationChange = (field: keyof GlobalCalibration, value: number) => {
-    setCalibration((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setCalibration((prev) => {
+      const updated = { ...prev, [field]: value };
+      if (field === 'tKelvin') {
+        updated.gammaAir = parseFloat(getStandardWaterGamma(value).toFixed(2));
+      }
+      return updated;
+    });
   };
 
   const handleDataChange = (
@@ -235,28 +249,11 @@ export default function App() {
           username={auth.username}
           currentData={{
             substances,
-            waterCalibration: {
-              Wpikno: calibration.Wpikno,
-              Wpikno_air: calibration.Wpikno_air
-            },
-            waterDensity: calibration.rhoAir,
-            waterSurfaceTension: calibration.gammaAir,
-            ambientTemp: calibration.T,
-            pycnometerVolume: calibration.Vpikno
+            calibration
           }}
           onLoadData={(data) => {
             if (data.substances) setSubstances(data.substances);
-            if (data.ambientTemp || data.pycnometerVolume) {
-              setCalibration(prev => ({
-                ...prev,
-                Wpikno: data.waterCalibration?.Wpikno || prev.Wpikno,
-                Wpikno_air: data.waterCalibration?.Wpikno_air || prev.Wpikno_air,
-                rhoAir: data.waterDensity || prev.rhoAir,
-                gammaAir: data.waterSurfaceTension || prev.gammaAir,
-                T: data.ambientTemp || prev.T,
-                Vpikno: data.pycnometerVolume || prev.Vpikno
-              }));
-            }
+            if (data.calibration) setCalibration(data.calibration);
           }}
         />
       )}
