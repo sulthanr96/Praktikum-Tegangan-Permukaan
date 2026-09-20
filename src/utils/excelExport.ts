@@ -238,14 +238,13 @@ export const exportExcel = async (
     let currentRow = 2;
     for (const key of ['mgcl2', 'sds', 'detergen']) {
       const sub = substances[key];
-      const { rows, regression } = computeAnalysis(sub, cal, mode);
+      const { rows, regression, keyExcess } = computeAnalysis(sub, cal, mode);
       const concs = rows.map(r => r.concentration);
       const gammas = rows.map(r => r.gamma);
       const excesses = rows.map(r => r.surfaceExcessMicro);
-      const maxExcess = Math.max(...excesses, 0);
       
       const chart1Svg = generateChart1Svg(sub, concs, gammas, regression);
-      const chart2Svg = generateChart2Svg(sub, concs, excesses, maxExcess);
+      const chart2Svg = generateChart2Svg(sub, concs, excesses, keyExcess);
       
       try {
         const b64_1 = await svgToPngBase64(chart1Svg);

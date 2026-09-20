@@ -191,14 +191,13 @@ export const GraphicsReport: React.FC<GraphicsReportProps> = ({ substances, cal,
         <div className="flex flex-col gap-10">
           {substanceKeys.map((key, idx) => {
             const sub = substances[key];
-            const { rows, regression } = computeAnalysis(sub, cal, mode);
+            const { rows, regression, keyExcess } = computeAnalysis(sub, cal, mode);
             const concs = rows.map(r => r.concentration);
             const gammas = rows.map(r => r.gamma);
             const excesses = rows.map(r => r.surfaceExcessMicro);
-            const maxExcess = Math.max(...excesses, 0);
 
             const chart1 = generateChart1Svg(sub, concs, gammas, regression);
-            const chart2 = generateChart2Svg(sub, concs, excesses, maxExcess);
+            const chart2 = generateChart2Svg(sub, concs, excesses, keyExcess);
 
             return (
               <div key={key} className="break-inside-avoid">

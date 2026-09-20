@@ -96,7 +96,7 @@ export function generateChart2Svg(
   substance: SubstanceInfo,
   concs: number[],
   excesses: number[],
-  maxExcess: number
+  keyExcess: number
 ): string {
   const mapX = (c: number) => 60 + ((c - 0.02) / 0.08) * 360;
   
@@ -132,6 +132,7 @@ export function generateChart2Svg(
   }).join('');
 
   const pathColor = substance.type === 'electrolyte' ? '#D97706' : '#7C3AED';
+  const labelExtreme = substance.type === 'electrolyte' ? 'Min Surface Excess (Γ_min):' : 'Max Surface Excess (Γ_maks):';
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 330" style="background-color: white;">
@@ -145,10 +146,10 @@ export function generateChart2Svg(
 
       <rect x="150" y="55" width="180" height="36" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
       <text x="240" y="70" text-anchor="middle" fill="#334155" font-family="JetBrains Mono" font-size="10" font-weight="bold">
-        Max Surface Excess (Γ):
+        ${labelExtreme}
       </text>
       <text x="240" y="84" text-anchor="middle" fill="#475569" font-family="JetBrains Mono" font-size="10">
-        ${maxExcess.toFixed(3)} μmol/m²
+        ${keyExcess.toFixed(3)} μmol/m²
       </text>
 
       <g stroke="#cbd5e1" stroke-dasharray="3 3" stroke-width="0.8">
