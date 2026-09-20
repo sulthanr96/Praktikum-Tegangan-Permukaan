@@ -29,28 +29,28 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
   const getInterpretation = (sub: SubstanceInfo, rows: any[], regression: any, keyExcess: number) => {
     const gFirst = rows[0]?.gamma ?? 0;
     const gLast = rows[rows.length - 1]?.gamma ?? 0;
-    const tren = gLast > gFirst ? 'meningkat' : 'menurun';
-    const trenDir = gLast > gFirst ? 'naik' : 'turun';
-    const slopeSign = regression.slope > 0 ? 'positif (dγ/dC > 0)' : 'negatif (dγ/dC < 0)';
+    const slopePositive = regression.slope > 0;
+    const slopeSign = slopePositive ? 'positif (dγ/dC > 0)' : 'negatif (dγ/dC < 0)';
     const delta = Math.abs(gLast - gFirst).toFixed(2);
+    const deltaSign = gLast > gFirst ? '+' : '−';
 
     if (sub.type === 'electrolyte') {
       const adsorpsiLabel = keyExcess < 0 ? 'negatif (Γ < 0)' : 'positif (Γ > 0)';
-      const trenTeks = gLast > gFirst
-        ? `Tegangan permukaan larutan MgCl₂ terpantau meningkat dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = +${delta} mN/m), menghasilkan gradien ${slopeSign} dan surface excess ${adsorpsiLabel}. Hal ini mengindikasikan adsorpsi negatif (ion Mg²⁺ dan Cl⁻ terdeplesi di antarmuka) sesuai teori Jones-Ray.`
-        : `Tegangan permukaan larutan MgCl₂ terpantau menurun dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = −${delta} mN/m), menghasilkan gradien ${slopeSign}. Pola ini tidak umum untuk elektrolit kuat dan dapat mengindikasikan pengaruh surfaktan kontaminan atau error pengukuran tinggi kapiler. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
+      const trenTeks = slopePositive
+        ? `Tegangan permukaan larutan MgCl₂ secara keseluruhan cenderung meningkat (Δ titik ujung = ${deltaSign}${delta} mN/m), menghasilkan gradien regresi ${slopeSign} dan surface excess ${adsorpsiLabel}. Hal ini mengindikasikan adsorpsi negatif (ion Mg²⁺ dan Cl⁻ terdeplesi di antarmuka udara-air) sesuai teori Efek Jones-Ray.`
+        : `Tegangan permukaan larutan MgCl₂ secara keseluruhan cenderung menurun (Δ titik ujung = ${deltaSign}${delta} mN/m), menghasilkan gradien regresi ${slopeSign}. Pola ini tidak umum untuk elektrolit kuat dan dapat mengindikasikan error sistematik pengukuran tinggi kapiler atau adanya pengaruh surfaktan kontaminan. Nilai Γ_min terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
       return trenTeks;
     } else if (sub.type === 'anionic_surfactant') {
       const adsorpsiLabel = keyExcess > 0 ? `positif (Γ_maks = ${keyExcess.toFixed(3)} μmol/m²)` : `bernilai ${keyExcess.toFixed(3)} μmol/m²`;
-      const trenTeks = gLast < gFirst
-        ? `SDS secara efektif menurunkan tegangan permukaan dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = −${delta} mN/m). Gradien ${slopeSign} menghasilkan surface excess ${adsorpsiLabel}, menunjukkan pembentukan monolayer surfaktan anionik yang rapat di antarmuka udara-air.`
-        : `Tegangan permukaan SDS terpantau ${tren} dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m. Hasil tidak tipikal — SDS seharusnya menurunkan γ. Periksa data pengukuran. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
+      const trenTeks = !slopePositive
+        ? `SDS secara efektif menurunkan tegangan permukaan (Δ titik ujung = ${deltaSign}${delta} mN/m). Gradien regresi ${slopeSign} menghasilkan surface excess ${adsorpsiLabel}, membuktikan pembentukan monolayer surfaktan anionik rapat di antarmuka udara-air.`
+        : `Tegangan permukaan SDS secara keseluruhan terpantau naik dengan gradien regresi ${slopeSign}. Hasil ini sangat tidak tipikal — surfaktan secara termodinamika selalu menurunkan γ air murni. Periksa kembali validitas data. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
       return trenTeks;
     } else {
       const adsorpsiLabel = keyExcess > 0 ? `positif (Γ_maks = ${keyExcess.toFixed(3)} μmol/m²)` : `bernilai ${keyExcess.toFixed(3)} μmol/m²`;
-      const trenTeks = gLast < gFirst
-        ? `Deterjen komersial menurunkan tegangan permukaan dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = −${delta} mN/m) dengan gradien ${slopeSign}. Surface excess ${adsorpsiLabel} mencerminkan adsorpsi efektif campuran surfaktan pada antarmuka.`
-        : `Tegangan permukaan deterjen terpantau ${tren} dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m. Pola ini tidak umum — deterjen seharusnya menurunkan γ. Periksa data input. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
+      const trenTeks = !slopePositive
+        ? `Deterjen komersial menurunkan tegangan permukaan (Δ titik ujung = ${deltaSign}${delta} mN/m). Gradien regresi ${slopeSign} menghasilkan surface excess ${adsorpsiLabel}, mencerminkan adsorpsi rata-rata dari campuran molekul amfifilik builder+LAS pada antarmuka.`
+        : `Tegangan permukaan deterjen secara keseluruhan terpantau naik dengan gradien regresi ${slopeSign}. Pola ini tidak lazim — deterjen seharusnya menurunkan γ. Periksa data input. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
       return trenTeks;
     }
   };
