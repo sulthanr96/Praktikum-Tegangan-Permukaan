@@ -1,6 +1,6 @@
 export type SubstanceKey = 'mgcl2' | 'detergen' | 'sds';
 
-export type AnalysisMode = 'alurA' | 'alurB';
+export type AnalysisMode = 'alurA' | 'alurB' | 'alurC';
 
 export interface GlobalCalibration {
   vPikno: number;     // mL

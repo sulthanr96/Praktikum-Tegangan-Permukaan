@@ -79,47 +79,62 @@ export function computeAnalysis(
     gammas.push(gamma);
   }
 
-  // 2. Dual-path dGamma/dC
+  // 2. Dual/triple-path dGamma/dC
   const dGammaDC: number[] = [];
   let regression: RegressionStats = { slope: 0, intercept: 0, r2: 0 };
 
-  // Calculate linear regression stats regardless for reporting
+  // --- Linear regression on C (used for Alur A and as reference) ---
   let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
   for (let i = 0; i < n; i++) {
     const x = sub.concentrations[i];
     const y = gammas[i];
-    sumX += x;
-    sumY += y;
-    sumXY += x * y;
-    sumX2 += x * x;
-    sumY2 += y * y;
+    sumX += x; sumY += y; sumXY += x * y; sumX2 += x * x; sumY2 += y * y;
   }
   const denomSlope = n * sumX2 - sumX * sumX;
   const slope = denomSlope !== 0 ? (n * sumXY - sumX * sumY) / denomSlope : 0;
   const intercept = (sumY - slope * sumX) / n;
-
   const numR = n * sumXY - sumX * sumY;
   const denR = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
   const r2 = denR > 0 ? Math.pow(numR / denR, 2) : 0.999;
   regression = { slope, intercept, r2: Math.min(1.0, Math.max(0, r2)) };
 
+  // --- Semi-log regression on ln(C): gamma = A + B*ln(C), so dgamma/dlnC = B, dgamma/dC = B/C ---
+  let slnX = 0, slnY = 0, slnXY = 0, slnX2 = 0, slnY2 = 0;
+  for (let i = 0; i < n; i++) {
+    const lx = Math.log(sub.concentrations[i]); // ln(C)
+    const y = gammas[i];
+    slnX += lx; slnY += y; slnXY += lx * y; slnX2 += lx * lx; slnY2 += y * y;
+  }
+  const denomSlopeLog = n * slnX2 - slnX * slnX;
+  const slopeLog = denomSlopeLog !== 0 ? (n * slnXY - slnX * slnY) / denomSlopeLog : 0;
+  const interceptLog = (slnY - slopeLog * slnX) / n;
+  const numRlog = n * slnXY - slnX * slnY;
+  const denRlog = Math.sqrt((n * slnX2 - slnX * slnX) * (n * slnY2 - slnY * slnY));
+  const r2Log = denRlog > 0 ? Math.pow(numRlog / denRlog, 2) : 0.999;
+
   if (mode === 'alurA') {
+    // Constant slope from linear regression
     for (let i = 0; i < n; i++) {
       dGammaDC.push(slope);
     }
-  } else {
-    // Alur B: Central & endpoint finite difference
+  } else if (mode === 'alurB') {
+    // Central & endpoint finite difference
     for (let i = 0; i < n; i++) {
       if (i === 0) {
-        const diff = (gammas[1] - gammas[0]) / (sub.concentrations[1] - sub.concentrations[0]);
-        dGammaDC.push(diff);
+        dGammaDC.push((gammas[1] - gammas[0]) / (sub.concentrations[1] - sub.concentrations[0]));
       } else if (i === n - 1) {
-        const diff = (gammas[n - 1] - gammas[n - 2]) / (sub.concentrations[n - 1] - sub.concentrations[n - 2]);
-        dGammaDC.push(diff);
+        dGammaDC.push((gammas[n - 1] - gammas[n - 2]) / (sub.concentrations[n - 1] - sub.concentrations[n - 2]));
       } else {
-        const diff = (gammas[i + 1] - gammas[i - 1]) / (sub.concentrations[i + 1] - sub.concentrations[i - 1]);
-        dGammaDC.push(diff);
+        dGammaDC.push((gammas[i + 1] - gammas[i - 1]) / (sub.concentrations[i + 1] - sub.concentrations[i - 1]));
       }
+    }
+  } else {
+    // Alur C: Semi-log regression  →  dgamma/dC = B / C  (where B = slopeLog)
+    // Use the semi-log regression line: gamma = interceptLog + slopeLog * ln(C)
+    // → dgamma/dC = slopeLog / C
+    regression = { slope: slopeLog, intercept: interceptLog, r2: Math.min(1.0, Math.max(0, r2Log)) };
+    for (let i = 0; i < n; i++) {
+      dGammaDC.push(slopeLog / sub.concentrations[i]);
     }
   }
 

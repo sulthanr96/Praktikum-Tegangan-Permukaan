@@ -119,28 +119,45 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
           </h2>
         </div>
 
-        {/* Dual Path Analysis Toggle */}
-        <div className="flex items-center gap-1.5 bg-[#e5eeff] p-1 rounded-lg border border-[#cbd5e1]/50">
-          <button
-            onClick={() => onAnalysisModeChange('alurA')}
-            className={`px-3 py-1.5 rounded-md font-['JetBrains_Mono'] text-xs font-bold transition-all ${
-              analysisMode === 'alurA'
-                ? 'bg-[#003159] text-white shadow-sm'
-                : 'text-[#42474f] hover:bg-[#dce9ff]'
-            }`}
-          >
-            Alur A: Regresi Analitik
-          </button>
-          <button
-            onClick={() => onAnalysisModeChange('alurB')}
-            className={`px-3 py-1.5 rounded-md font-['JetBrains_Mono'] text-xs font-bold transition-all ${
-              analysisMode === 'alurB'
-                ? 'bg-[#003159] text-white shadow-sm'
-                : 'text-[#42474f] hover:bg-[#dce9ff]'
-            }`}
-          >
-            Alur B: Beda Hingga (Finite Diff)
-          </button>
+        {/* Dual/Triple Path Analysis Toggle */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5 bg-[#e5eeff] p-1 rounded-lg border border-[#cbd5e1]/50">
+            <button
+              onClick={() => onAnalysisModeChange('alurA')}
+              className={`px-3 py-1.5 rounded-md font-['JetBrains_Mono'] text-xs font-bold transition-all ${
+                analysisMode === 'alurA'
+                  ? 'bg-[#003159] text-white shadow-sm'
+                  : 'text-[#42474f] hover:bg-[#dce9ff]'
+              }`}
+            >
+              Alur A: Regresi Analitik
+            </button>
+            <button
+              onClick={() => onAnalysisModeChange('alurB')}
+              className={`px-3 py-1.5 rounded-md font-['JetBrains_Mono'] text-xs font-bold transition-all ${
+                analysisMode === 'alurB'
+                  ? 'bg-[#003159] text-white shadow-sm'
+                  : 'text-[#42474f] hover:bg-[#dce9ff]'
+              }`}
+            >
+              Alur B: Beda Hingga
+            </button>
+            <button
+              onClick={() => onAnalysisModeChange('alurC')}
+              className={`px-3 py-1.5 rounded-md font-['JetBrains_Mono'] text-xs font-bold transition-all ${
+                analysisMode === 'alurC'
+                  ? 'bg-[#7C3AED] text-white shadow-sm'
+                  : 'text-[#42474f] hover:bg-[#dce9ff]'
+              }`}
+            >
+              Alur C: Semi-Logaritmik
+            </button>
+          </div>
+          {analysisMode === 'alurC' && (
+            <div className="font-['Inter'] text-[11px] text-[#7C3AED] bg-[#f5f3ff] border border-[#7C3AED]/20 px-3 py-1.5 rounded-lg leading-relaxed">
+              <strong>ℹ Alur C:</strong> Menggunakan regresi semi-logaritmik γ = A + B·ln(C), sehingga dγ/dC = B/C pada tiap titik. Lebih akurat untuk surfaktan (SDS, Deterjen) karena kurva γ vs C aslinya bersifat logaritmik. Nilai Γ yang dihasilkan lebih konsisten dengan teori Gibbs sesungguhnya.
+            </div>
+          )}
         </div>
       </div>
 
@@ -156,10 +173,12 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="font-['JetBrains_Mono'] text-xs text-[#42474f] hidden xl:block">
               Metode Aktif:{' '}
-              <span className="font-bold text-[#003159]">
+              <span className={`font-bold ${analysisMode === 'alurC' ? 'text-[#7C3AED]' : 'text-[#003159]'}`}>
                 {analysisMode === 'alurA'
-                  ? 'Regresi Polinomial'
-                  : 'Beda Hingga Numerik'}
+                  ? 'Regresi Linier (A)'
+                  : analysisMode === 'alurB'
+                  ? 'Beda Hingga Numerik (B)'
+                  : 'Semi-Logaritmik (C)'}
               </span>
             </div>
             
@@ -606,20 +625,68 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
           })()}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-['JetBrains_Mono'] text-xs">
-          <div className="p-2.5 rounded-lg bg-[#eff4ff] flex items-center gap-2 border border-[#cbd5e1]/40">
-            <span className="material-symbols-outlined text-sm text-[#059669]">check</span>
-            <span>Konsistensi Kenaikan Kapiler: Normal</span>
-          </div>
-          <div className="p-2.5 rounded-lg bg-[#eff4ff] flex items-center gap-2 border border-[#cbd5e1]/40">
-            <span className="material-symbols-outlined text-sm text-[#059669]">check</span>
-            <span>Kewajaran Nilai Densitas Pikno: Valid</span>
-          </div>
-          <div className="p-2.5 rounded-lg bg-[#eff4ff] flex items-center gap-2 border border-[#cbd5e1]/40">
-            <span className="material-symbols-outlined text-sm text-[#003159]">verified_user</span>
-            <span>Galat Relatif Terhadap Literatur: &lt; 3.8%</span>
-          </div>
-        </div>
+        {/* Dynamic validation cards */}
+        {(() => {
+          const hValues = calculatedRows.map(r => r.hCapillary).filter(h => h > 0);
+          const rhoValues = calculatedRows.map(r => r.rho).filter(r => r > 0);
+          const gammaVals = calculatedRows.map(r => r.gamma).filter(g => g > 0);
+
+          // Card 1: Konsistensi h (check all h > 0 and span is reasonable)
+          const hOk = hValues.length === 5 && hValues.every(h => h >= 0.1 && h <= 15);
+          const hMonotone = hValues.length === 5 && (
+            hValues.every((v, i, a) => i === 0 || v >= a[i-1]) ||
+            hValues.every((v, i, a) => i === 0 || v <= a[i-1])
+          );
+          const hCard = hValues.length === 0
+            ? { icon: 'info', color: '#64748b', label: 'Kenaikan Kapiler: Data Belum Diinput', bg: 'bg-[#eff4ff]' }
+            : !hOk
+            ? { icon: 'warning', color: '#D97706', label: `Kenaikan Kapiler: ⚠ ${hValues.filter(h => h < 0.1 || h > 15).length} nilai di luar wajar (0.1–15 cm)`, bg: 'bg-amber-50' }
+            : hMonotone
+            ? { icon: 'check', color: '#059669', label: `Kenaikan Kapiler: Monoton (${Math.min(...hValues).toFixed(2)}–${Math.max(...hValues).toFixed(2)} cm)`, bg: 'bg-[#eff4ff]' }
+            : { icon: 'check_circle', color: '#0D9488', label: `Kenaikan Kapiler: Terisi (${Math.min(...hValues).toFixed(2)}–${Math.max(...hValues).toFixed(2)} cm)`, bg: 'bg-[#eff4ff]' };
+
+          // Card 2: Kewajaran densitas (0.85 - 1.15 g/cm³)
+          const rhoInRange = rhoValues.filter(r => r >= 0.85 && r <= 1.15);
+          const rhoCard = rhoValues.length === 0
+            ? { icon: 'info', color: '#64748b', label: 'Densitas Pikno: Data Belum Diinput', bg: 'bg-[#eff4ff]' }
+            : rhoInRange.length === rhoValues.length
+            ? { icon: 'check', color: '#059669', label: `Densitas Pikno: Wajar (${Math.min(...rhoValues).toFixed(4)}–${Math.max(...rhoValues).toFixed(4)} g/cm³)`, bg: 'bg-[#eff4ff]' }
+            : { icon: 'warning', color: '#D97706', label: `Densitas Pikno: ⚠ ${rhoValues.length - rhoInRange.length} nilai di luar 0.85–1.15 g/cm³`, bg: 'bg-amber-50' };
+
+          // Card 3: Tren tegangan (surfactant should decrease, electrolyte should increase)
+          const gammaTrendOk = gammaVals.length >= 2 && (
+            (currentSubstance.type === 'electrolyte' && gammaVals[gammaVals.length - 1] >= gammaVals[0]) ||
+            (currentSubstance.type !== 'electrolyte' && gammaVals[gammaVals.length - 1] <= gammaVals[0])
+          );
+          const expectedTrend = currentSubstance.type === 'electrolyte' ? 'naik' : 'turun';
+          const gammaCard = gammaVals.length === 0
+            ? { icon: 'info', color: '#64748b', label: 'Tren γ: Data Belum Diinput', bg: 'bg-[#eff4ff]' }
+            : gammaVals.length < 5
+            ? { icon: 'info', color: '#64748b', label: 'Tren γ: Data Tidak Lengkap', bg: 'bg-[#eff4ff]' }
+            : gammaOk()
+            ? { icon: 'verified_user', color: '#003159', label: `Tren γ: ✓ Sesuai teori (${expectedTrend})`, bg: 'bg-[#eff4ff]' }
+            : { icon: 'warning', color: '#D97706', label: `Tren γ: ⚠ Tidak sesuai (harusnya ${expectedTrend})`, bg: 'bg-amber-50' };
+
+          function gammaOk() {
+            return gammaVals.length >= 2 && gammaVals.every((_v, i, a) =>
+              i === 0 || (currentSubstance.type === 'electrolyte' ? a[i] >= a[i-1] * 0.95 : a[i] <= a[i-1] * 1.05)
+            ) ? true : gammaVals.length >= 2 && (
+              (currentSubstance.type === 'electrolyte' && gammaVals[gammaVals.length-1] > gammaVals[0]) ||
+              (currentSubstance.type !== 'electrolyte' && gammaVals[gammaVals.length-1] < gammaVals[0])
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-['JetBrains_Mono'] text-xs">
+              {[hCard, rhoCard, gammaCard].map((card, idx) => (
+                <div key={idx} className={`p-2.5 rounded-lg ${card.bg} flex items-center gap-2 border border-[#cbd5e1]/40`}>
+                  <span className="material-symbols-outlined text-sm shrink-0" style={{ color: card.color }}>{card.icon}</span>
+                  <span>{card.label}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </section>
   );
