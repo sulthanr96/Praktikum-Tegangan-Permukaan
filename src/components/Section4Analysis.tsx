@@ -550,9 +550,12 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
           {(() => {
             const gFirst = gammas[0] ?? 0;
             const gLast = gammas[gammas.length - 1] ?? 0;
-            const tren = gLast > gFirst ? 'meningkat' : 'menurun';
-            const delta = Math.abs(gLast - gFirst).toFixed(2);
             const slopePositive = regression.slope > 0;
+            // Use regression slope sign as the authoritative trend indicator,
+            // NOT the naive first-vs-last comparison (which is noise-sensitive)
+            const trenBySlope = slopePositive ? 'meningkat' : 'menurun';
+            const delta = Math.abs(gLast - gFirst).toFixed(2);
+            const deltaSign = gLast > gFirst ? '+' : '−';
 
             if (currentSubstance.type === 'electrolyte') {
               const adsorpsiLabel = keyExcess < 0 ? 'negatif (Γ < 0)' : 'positif (Γ > 0)';
@@ -560,21 +563,21 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
                 <>
                   <p className="mb-2">
                     <strong className="text-[#D97706]">Karakteristik Elektrolit Kuat (MgCl₂):</strong>{' '}
-                    Tegangan permukaan larutan terpantau{' '}
-                    <em>{tren}</em> seiring penambahan konsentrasi (dari {gFirst.toFixed(2)} mN/m ke{' '}
-                    {gLast.toFixed(2)} mN/m, Δ = {gLast > gFirst ? '+' : '−'}{delta} mN/m).
-                    Hal ini menghasilkan gradien{' '}
+                    Berdasarkan garis regresi linier, tegangan permukaan larutan secara keseluruhan{' '}
+                    cenderung <em>{trenBySlope}</em> seiring penambahan konsentrasi (dari {gFirst.toFixed(2)} mN/m ke{' '}
+                    {gLast.toFixed(2)} mN/m, Δ titik ujung = {deltaSign}{delta} mN/m).{' '}
+                    Gradien regresi{' '}
                     <span className="font-['JetBrains_Mono'] text-xs font-bold">
                       dγ/dC {slopePositive ? '> 0' : '< 0'} ({regression.slope.toFixed(2)})
                     </span>
-                    , sehingga nilai surface excess bertanda <strong>{adsorpsiLabel}</strong>{' '}
+                    {' '}menghasilkan surface excess bertanda <strong>{adsorpsiLabel}</strong>{' '}
                     dengan Γ<sub>min</sub> = {keyExcess.toFixed(3)} μmol/m².
                   </p>
                   <p className="text-xs text-[#42474f]">
-                    <strong>Penjelasan Mikroskopis:</strong>{' '}
-                    {gLast > gFirst
-                      ? 'Ion hidrasi Mg²⁺ dan Cl⁻ memiliki energi solvasi yang sangat tinggi di dalam fasa ruah (bulk liquid) air. Kekurangan molekul zat terlarut pada antarmuka dikenal sebagai negative adsorption (Efek Jones-Ray).'
-                      : 'Pola penurunan γ yang tidak tipikal untuk elektrolit kuat ini mungkin disebabkan oleh adanya surfaktan kontaminan, atau perlu diperiksa kembali ketelitian pengukuran tinggi kapiler (h).'}
+                    <strong>Catatan:</strong>{' '}
+                    {slopePositive
+                      ? 'Ion hidrasi Mg²⁺ dan Cl⁻ memiliki energi solvasi tinggi di fasa ruah air. Kekurangan ion di antarmuka dikenal sebagai negative adsorption (Efek Jones-Ray). Fluktuasi antar titik data adalah hal wajar dalam praktikum.'
+                      : 'Gradien regresi negatif tidak tipikal untuk elektrolit kuat. Kemungkinan ada error sistematis pada pengukuran tinggi kapiler (h) atau kontaminasi surfaktan. R² = ' + regression.r2.toFixed(3) + ' — semakin rendah R², semakin besar pengaruh noise data.'}
                   </p>
                 </>
               );
@@ -583,21 +586,22 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
                 <>
                   <p className="mb-2">
                     <strong className="text-[#7C3AED]">Karakteristik Surfaktan Anionik Murni (SDS):</strong>{' '}
-                    Terpantau {tren === 'menurun' ? 'penurunan tajam' : 'kenaikan tidak umum'}{' '}
-                    tegangan permukaan dari {gFirst.toFixed(2)} mN/m menjadi {gLast.toFixed(2)} mN/m{' '}
-                    (Δ = {gLast < gFirst ? '−' : '+'}{delta} mN/m) dengan turunan{' '}
+                    Berdasarkan garis regresi, tegangan permukaan{' '}
+                    {!slopePositive ? 'menurun' : 'meningkat (tidak tipikal)'}{' '}
+                    dari {gFirst.toFixed(2)} mN/m menjadi {gLast.toFixed(2)} mN/m{' '}
+                    (Δ titik ujung = {gLast < gFirst ? '−' : '+'}{delta} mN/m) dengan gradien regresi{' '}
                     <span className="font-['JetBrains_Mono'] text-xs font-bold">
                       dγ/dC = {regression.slope.toFixed(2)} ({slopePositive ? '> 0' : '< 0'})
                     </span>
-                    , menghasilkan surface excess{' '}
-                    <strong>{keyExcess > 0 ? `positif (Γ > 0)` : `negatif (Γ < 0)`}</strong>{' '}
+                    {', '}menghasilkan surface excess{' '}
+                    <strong>{keyExcess > 0 ? 'positif (Γ > 0)' : 'negatif (Γ < 0)'}</strong>{' '}
                     hingga mencapai Γ<sub>maks</sub> = {keyExcess.toFixed(3)} μmol/m².
                   </p>
                   <p className="text-xs text-[#42474f]">
                     <strong>Penjelasan Mikroskopis:</strong>{' '}
-                    {tren === 'menurun'
-                      ? 'Gugus hidrofobik ekor dodesil terdorong keluar menuju fasa udara untuk meminimalkan kontak dengan dipol air murni, sedangkan kepala sulfat polar tetap terhidrasi di air. Hal ini membuktikan pembentukan monolayer rapat pada antarmuka sesuai hukum termodinamika adsorpsi Gibbs.'
-                      : 'Data menunjukkan tren yang tidak umum untuk SDS. Periksa kembali data input — kemungkinan ada kesalahan pencatatan tinggi kapiler atau massa piknometer.'}
+                    {!slopePositive
+                      ? 'Gugus hidrofobik ekor dodesil terdorong keluar menuju fasa udara, sedangkan kepala sulfat polar tetap terhidrasi di air. Hal ini membuktikan pembentukan monolayer rapat pada antarmuka.'
+                      : 'Gradien regresi positif tidak tipikal untuk SDS. Periksa kembali data input — kemungkinan ada kesalahan pencatatan h kapiler atau massa piknometer.'}
                   </p>
                 </>
               );
@@ -606,18 +610,20 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
                 <>
                   <p className="mb-2">
                     <strong className="text-[#0D9488]">Karakteristik Surfaktan Formulasi Komersial (Deterjen):</strong>{' '}
-                    Tegangan permukaan {tren} dari {gFirst.toFixed(2)} mN/m ke {gLast.toFixed(2)} mN/m{' '}
-                    (Δ = {gLast < gFirst ? '−' : '+'}{delta} mN/m) dengan dγ/dC ={' '}
+                    Berdasarkan garis regresi, tegangan permukaan{' '}
+                    {!slopePositive ? 'menurun' : 'meningkat (tidak tipikal)'}{' '}
+                    dari {gFirst.toFixed(2)} mN/m ke {gLast.toFixed(2)} mN/m{' '}
+                    (Δ titik ujung = {gLast < gFirst ? '−' : '+'}{delta} mN/m) dengan dγ/dC ={' '}
                     <span className="font-['JetBrains_Mono'] text-xs font-bold">
                       {regression.slope.toFixed(2)} ({slopePositive ? '> 0' : '< 0'})
                     </span>
-                    . Deterjen mengandung campuran surfaktan linier alkilbenzena sulfonat (LAS) dan builder, sehingga nilai dγ/dC mencerminkan perilaku rata-rata dari berbagai spesi amfifilik. Γ<sub>maks</sub> = {keyExcess.toFixed(3)} μmol/m².
+                    . Deterjen mengandung campuran surfaktan kompleks (LAS + builder). Γ<sub>maks</sub> = {keyExcess.toFixed(3)} μmol/m².
                   </p>
                   <p className="text-xs text-[#42474f]">
                     <strong>Penjelasan Mikroskopis:</strong>{' '}
-                    {tren === 'menurun'
-                      ? 'Kurva memperlihatkan kecenderungan penurunan yang mengindikasikan bahwa molekul deterjen terakumulasi di antarmuka. Pada konsentrasi tinggi, permukaan antarmuka dapat mendekati kejenuhan monolayer (Critical Micelle Concentration range).'
-                      : 'Tren kenaikan tegangan permukaan tidak tipikal untuk surfaktan komersial. Periksa kembali data input — kemungkinan ada kesalahan pengukuran.'}
+                    {!slopePositive
+                      ? 'Molekul deterjen terakumulasi di antarmuka udara-air. Pada konsentrasi tinggi, permukaan dapat mendekati kejenuhan monolayer (CMC range).'
+                      : 'Tren regresi positif tidak tipikal untuk surfaktan komersial. Periksa kembali data pengukuran.'}
                   </p>
                 </>
               );
@@ -653,28 +659,22 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
             ? { icon: 'check', color: '#059669', label: `Densitas Pikno: Wajar (${Math.min(...rhoValues).toFixed(4)}–${Math.max(...rhoValues).toFixed(4)} g/cm³)`, bg: 'bg-[#eff4ff]' }
             : { icon: 'warning', color: '#D97706', label: `Densitas Pikno: ⚠ ${rhoValues.length - rhoInRange.length} nilai di luar 0.85–1.15 g/cm³`, bg: 'bg-amber-50' };
 
-          // Card 3: Tren tegangan (surfactant should decrease, electrolyte should increase)
-          const gammaTrendOk = gammaVals.length >= 2 && (
-            (currentSubstance.type === 'electrolyte' && gammaVals[gammaVals.length - 1] >= gammaVals[0]) ||
-            (currentSubstance.type !== 'electrolyte' && gammaVals[gammaVals.length - 1] <= gammaVals[0])
+          // Card 3: Tren γ — use regression slope sign, not noisy first-vs-last comparison
+          // electrolyte should have slope > 0, surfactants should have slope < 0
+          const slopeSign = regression.slope > 0;
+          const expectedTrend = currentSubstance.type === 'electrolyte' ? 'naik (slope > 0)' : 'turun (slope < 0)';
+          const trendOkBySlope = gammaVals.length >= 5 && (
+            (currentSubstance.type === 'electrolyte' && slopeSign) ||
+            (currentSubstance.type !== 'electrolyte' && !slopeSign)
           );
-          const expectedTrend = currentSubstance.type === 'electrolyte' ? 'naik' : 'turun';
+          const slopeLabel = `slope = ${regression.slope.toFixed(2)}, R² = ${regression.r2.toFixed(3)}`;
           const gammaCard = gammaVals.length === 0
             ? { icon: 'info', color: '#64748b', label: 'Tren γ: Data Belum Diinput', bg: 'bg-[#eff4ff]' }
             : gammaVals.length < 5
             ? { icon: 'info', color: '#64748b', label: 'Tren γ: Data Tidak Lengkap', bg: 'bg-[#eff4ff]' }
-            : gammaOk()
-            ? { icon: 'verified_user', color: '#003159', label: `Tren γ: ✓ Sesuai teori (${expectedTrend})`, bg: 'bg-[#eff4ff]' }
-            : { icon: 'warning', color: '#D97706', label: `Tren γ: ⚠ Tidak sesuai (harusnya ${expectedTrend})`, bg: 'bg-amber-50' };
-
-          function gammaOk() {
-            return gammaVals.length >= 2 && gammaVals.every((_v, i, a) =>
-              i === 0 || (currentSubstance.type === 'electrolyte' ? a[i] >= a[i-1] * 0.95 : a[i] <= a[i-1] * 1.05)
-            ) ? true : gammaVals.length >= 2 && (
-              (currentSubstance.type === 'electrolyte' && gammaVals[gammaVals.length-1] > gammaVals[0]) ||
-              (currentSubstance.type !== 'electrolyte' && gammaVals[gammaVals.length-1] < gammaVals[0])
-            );
-          }
+            : trendOkBySlope
+            ? { icon: 'verified_user', color: '#003159', label: `Tren γ (regresi): ✓ Sesuai teori — ${slopeLabel}`, bg: 'bg-[#eff4ff]' }
+            : { icon: 'warning', color: '#D97706', label: `Tren γ (regresi): ⚠ Tidak sesuai (harusnya ${expectedTrend}) — ${slopeLabel}`, bg: 'bg-amber-50' };
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-['JetBrains_Mono'] text-xs">
