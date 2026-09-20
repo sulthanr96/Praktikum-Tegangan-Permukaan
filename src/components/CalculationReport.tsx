@@ -328,6 +328,17 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
                   Pada suhu praktikum <strong>{cal.tKelvin} K</strong>: γ<sub>air</sub> = <strong>{gammaAir.toFixed(2)} mN/m</strong>
                 </p>
               </div>
+
+              {/* Tabel Kalibrasi Air Placeholder */}
+              <div className="mt-5 mb-2 break-inside-avoid">
+                <h5 className="font-bold text-xs text-slate-800 tracking-wider mb-2">
+                  d. Tabel Ringkasan Hasil Kalibrasi Air Baku
+                </h5>
+                <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg p-3 text-center flex flex-col items-center justify-center min-h-[90px]">
+                  <span className="text-sm">✂ 📋</span>
+                  <span className="font-bold text-xs text-slate-700 mt-1">Tempelkan Tabel Hasil Kalibrasi Air Baku &amp; Piknometer di Sini</span>
+                </div>
+              </div>
             </div>
           </div>
 
