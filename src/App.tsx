@@ -148,6 +148,16 @@ export default function App() {
   );
 
 
+  const handleLogout = () => {
+    if (window.confirm('Keluar dari sesi ini? Semua data yang belum disimpan ke Cloud akan hilang dari perangkat ini.')) {
+      localStorage.removeItem('srslab_calibration');
+      localStorage.removeItem('srslab_substances');
+      setCalibration(INITIAL_CALIBRATION);
+      setSubstances(INITIAL_SUBSTANCES);
+      setAuth({ isLoggedIn: false });
+    }
+  };
+
   if (!auth.isLoggedIn) {
     return <LoginScreen onLoginSuccess={(role, username) => { setAuth({ isLoggedIn: true, role, username }); if (role === 'admin') setView('admin'); }} />;
   }
@@ -163,6 +173,7 @@ export default function App() {
           role={auth.role}
           view={view}
           onToggleView={() => setView(view === 'admin' ? 'kalkulator' : 'admin')}
+          onLogout={handleLogout}
         />
 
         <SubNavRibbon

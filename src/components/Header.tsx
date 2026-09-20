@@ -8,6 +8,7 @@ interface HeaderProps {
   role?: string;
   view?: 'kalkulator' | 'admin';
   onToggleView?: () => void;
+  onLogout?: () => void;
 }
 
 const STEP_LABELS = [
@@ -26,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   role,
   view,
   onToggleView,
+  onLogout,
 }) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl shadow-[0_2px_16px_-2px_rgba(15,23,42,0.06)] border-b border-[#cbd5e1]/40">
@@ -102,6 +104,18 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <span className="material-symbols-outlined text-sm sm:text-sm">play_circle</span>
               <span className="hidden sm:inline">Isi Demo</span>
+            </button>
+          )}
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              type="button"
+              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-rose-50 text-rose-600 font-['JetBrains_Mono'] text-xs font-medium hover:bg-rose-600 hover:text-white border border-rose-200 hover:border-rose-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0 ml-1"
+              title="Keluar"
+            >
+              <span className="material-symbols-outlined text-sm sm:text-sm">logout</span>
+              <span className="hidden sm:inline">Keluar</span>
             </button>
           )}
         </div>

@@ -24,15 +24,10 @@ const labSessionSchema = new mongoose.Schema({
   groupName: { type: String, required: true, unique: true },
   lastUpdated: { type: Date, default: Date.now },
   substances: { type: Object, default: {} },
-  waterCalibration: { type: Object, default: {} },
-  waterDensity: { type: Number },
-  waterSurfaceTension: { type: Number },
-  ambientTemp: { type: Number },
-  pycnometerVolume: { type: Number }
+  calibration: { type: Object, default: {} }
 });
 
 const LabSession = mongoose.model('LabSession', labSessionSchema);
-
 
 // Schema for User Auth
 const userSchema = new mongoose.Schema({
@@ -137,11 +132,7 @@ app.post('/api/sessions', async (req, res) => {
         $set: {
           lastUpdated: Date.now(),
           substances: data.substances,
-          waterCalibration: data.waterCalibration,
-          waterDensity: data.waterDensity,
-          waterSurfaceTension: data.waterSurfaceTension,
-          ambientTemp: data.ambientTemp,
-          pycnometerVolume: data.pycnometerVolume
+          calibration: data.calibration
         }
       },
       { new: true, upsert: true } // upsert creates if it doesn't exist
@@ -164,6 +155,12 @@ app.get('/api/sessions/:groupName', async (req, res) => {
       return res.status(404).json({ error: 'Data not found for this group' });
     }
 
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    });
     res.json({ success: true, data: session });
   } catch (err) {
     console.error('Error loading session:', err);

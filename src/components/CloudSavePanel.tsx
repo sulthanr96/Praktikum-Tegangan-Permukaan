@@ -58,7 +58,13 @@ export const CloudSavePanel: React.FC<CloudSavePanelProps> = ({ currentData, onL
     
     setStatus('loading');
     try {
-      const response = await fetch(`${API_URL}/${encodeURIComponent(groupName.trim())}`);
+      const response = await fetch(`${API_URL}/${encodeURIComponent(groupName.trim())}?t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       const result = await response.json();
       
       if (response.ok && result.data) {
@@ -101,7 +107,7 @@ export const CloudSavePanel: React.FC<CloudSavePanelProps> = ({ currentData, onL
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-['JetBrains_Mono'] text-[#42474f] mb-1">Akun / Identitas:</label>
-          {username ? (
+          {(username && username !== 'admin') ? (
             <div className="w-full px-3 py-2 bg-[#f1f5f9] border border-[#cbd5e1] rounded-lg text-sm text-[#003159] font-['Inter'] font-semibold">
               {username}
             </div>
