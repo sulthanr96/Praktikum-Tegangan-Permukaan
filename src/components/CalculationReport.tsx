@@ -151,33 +151,13 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
 
           {/* Tabel Hasil Pengolahan Data */}
           <div className="mt-5 mb-2 break-inside-avoid">
-            <h5 className="font-bold text-xs text-slate-800 uppercase tracking-wider mb-2">
+            <h5 className="font-bold text-xs text-slate-800 tracking-wider mb-2">
               e. Tabel Ringkasan Hasil Pengolahan Data
             </h5>
-            <table className="w-full text-[10px] border-collapse border border-slate-400 text-center">
-              <thead className="bg-slate-100 font-bold text-slate-700">
-                <tr>
-                  <th className="border border-slate-400 p-1">Konsentrasi (M)</th>
-                  <th className="border border-slate-400 p-1">m_pikno+zat (g)</th>
-                  <th className="border border-slate-400 p-1">h (cm)</th>
-                  <th className="border border-slate-400 p-1">Densitas, ρ (g/cm³)</th>
-                  <th className="border border-slate-400 p-1">Tegangan, γ (mN/m)</th>
-                  <th className="border border-slate-400 p-1">Excess, Γ (μmol/m²)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r: any, idx: number) => (
-                  <tr key={idx}>
-                    <td className="border border-slate-400 p-1 bg-slate-50">{r.concentration.toFixed(2)}</td>
-                    <td className="border border-slate-400 p-1">{sub.mPikno[idx].toFixed(4)}</td>
-                    <td className="border border-slate-400 p-1">{r.hCapillary.toFixed(2)}</td>
-                    <td className="border border-slate-400 p-1 bg-blue-50/30">{r.rho.toFixed(4)}</td>
-                    <td className="border border-slate-400 p-1 bg-emerald-50/30">{r.gamma.toFixed(2)}</td>
-                    <td className="border border-slate-400 p-1 bg-purple-50/30">{r.surfaceExcessMicro.toFixed(3)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="border-2 border-dashed border-slate-400 bg-slate-50 rounded-lg p-3 text-center flex flex-col items-center justify-center min-h-[90px]">
+              <span className="text-sm">✂ 📋</span>
+              <span className="font-bold text-xs text-slate-700 mt-1">Tempelkan Tabel Hasil Pengolahan Data {subName} di Sini</span>
+            </div>
           </div>
 
           {/* Kotak Placeholder Tempel Grafik */}
