@@ -26,26 +26,46 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
   const detergenAnalysis = computeAnalysis(substances.detergen, cal, mode);
   const sdsAnalysis = computeAnalysis(substances.sds, cal, mode);
 
-  const getInterpretation = (sub: SubstanceInfo, rows: any[], regression: any, maxExcess: number) => {
-    const gFirst = rows[0]?.gamma.toFixed(2);
-    const gLast = rows[4]?.gamma.toFixed(2);
+  const getInterpretation = (sub: SubstanceInfo, rows: any[], regression: any, keyExcess: number) => {
+    const gFirst = rows[0]?.gamma ?? 0;
+    const gLast = rows[rows.length - 1]?.gamma ?? 0;
+    const tren = gLast > gFirst ? 'meningkat' : 'menurun';
+    const trenDir = gLast > gFirst ? 'naik' : 'turun';
+    const slopeSign = regression.slope > 0 ? 'positif (dγ/dC > 0)' : 'negatif (dγ/dC < 0)';
+    const delta = Math.abs(gLast - gFirst).toFixed(2);
 
     if (sub.type === 'electrolyte') {
-      return `Sifat elektrolit MgCl₂ menaikkan tegangan permukaan (${gFirst} mN/m ke ${gLast} mN/m). Nilai dγ/dC positif menghasilkan surface excess negatif (Γ < 0), menandakan desorpsi negatif ion di antarmuka udara-air.`;
+      const adsorpsiLabel = keyExcess < 0 ? 'negatif (Γ < 0)' : 'positif (Γ > 0)';
+      const trenTeks = gLast > gFirst
+        ? `Tegangan permukaan larutan MgCl₂ terpantau meningkat dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = +${delta} mN/m), menghasilkan gradien ${slopeSign} dan surface excess ${adsorpsiLabel}. Hal ini mengindikasikan adsorpsi negatif (ion Mg²⁺ dan Cl⁻ terdeplesi di antarmuka) sesuai teori Jones-Ray.`
+        : `Tegangan permukaan larutan MgCl₂ terpantau menurun dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = −${delta} mN/m), menghasilkan gradien ${slopeSign}. Pola ini tidak umum untuk elektrolit kuat dan dapat mengindikasikan pengaruh surfaktan kontaminan atau error pengukuran tinggi kapiler. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
+      return trenTeks;
     } else if (sub.type === 'anionic_surfactant') {
-      return `SDS menurunkan tegangan permukaan secara signifikan (${gFirst} mN/m ke ${gLast} mN/m). Nilai dγ/dC negatif menghasilkan surface excess positif (Γ > 0), menandakan pembentukan monolayer surfaktan rapat di antarmuka.`;
+      const adsorpsiLabel = keyExcess > 0 ? `positif (Γ_maks = ${keyExcess.toFixed(3)} μmol/m²)` : `bernilai ${keyExcess.toFixed(3)} μmol/m²`;
+      const trenTeks = gLast < gFirst
+        ? `SDS secara efektif menurunkan tegangan permukaan dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = −${delta} mN/m). Gradien ${slopeSign} menghasilkan surface excess ${adsorpsiLabel}, menunjukkan pembentukan monolayer surfaktan anionik yang rapat di antarmuka udara-air.`
+        : `Tegangan permukaan SDS terpantau ${tren} dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m. Hasil tidak tipikal — SDS seharusnya menurunkan γ. Periksa data pengukuran. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
+      return trenTeks;
     } else {
-      return `Deterjen komersial menurunkan tegangan permukaan progresif (${gFirst} mN/m ke ${gLast} mN/m) dengan dγ/dC negatif dan surface excess positif, mencerminkan adsorpsi efektif surfaktan pada permukaan air.`;
+      const adsorpsiLabel = keyExcess > 0 ? `positif (Γ_maks = ${keyExcess.toFixed(3)} μmol/m²)` : `bernilai ${keyExcess.toFixed(3)} μmol/m²`;
+      const trenTeks = gLast < gFirst
+        ? `Deterjen komersial menurunkan tegangan permukaan dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m (Δ = −${delta} mN/m) dengan gradien ${slopeSign}. Surface excess ${adsorpsiLabel} mencerminkan adsorpsi efektif campuran surfaktan pada antarmuka.`
+        : `Tegangan permukaan deterjen terpantau ${tren} dari ${gFirst.toFixed(2)} mN/m ke ${gLast.toFixed(2)} mN/m. Pola ini tidak umum — deterjen seharusnya menurunkan γ. Periksa data input. Nilai Γ terhitung: ${keyExcess.toFixed(3)} μmol/m².`;
+      return trenTeks;
     }
   };
 
   const renderSubstanceCalculation = (sub: SubstanceInfo, romanIndex: number, analysisResult: any) => {
-    const { rows, regression, maxExcess } = analysisResult;
+    const { rows, regression, keyExcess, minExcess, maxExcess } = analysisResult;
     const rFirst = rows[0]; // 0.02 M
     const rLast = rows[4];  // 0.10 M
 
     const romanStr = romanIndex === 2 ? 'II' : romanIndex === 3 ? 'III' : 'IV';
     const subName = sub.id === 'mgcl2' ? 'MgCl₂' : sub.name.toUpperCase();
+    // For electrolytes: Γ_min; for surfactants: Γ_max
+    const isElectrolyte = sub.type === 'electrolyte';
+    const gammaExtremeLabel = isElectrolyte ? 'Γ_min' : 'Γ_maks';
+    const gammaExtremeValue = isElectrolyte ? minExcess : maxExcess;
 
     return (
       <div key={sub.id} className="mb-6 border-b border-gray-300 pb-4">
@@ -121,6 +141,12 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
                 Γ = - <Fraction num="0.10 mol/L" den={`8.314 × ${cal.tKelvin}`} /> × ({rLast.dGammaDC.toFixed(2)}) × 10⁻⁶ = <strong>{rLast.surfaceExcessMicro.toFixed(3)} × 10⁻⁶ mol/m²</strong>
               </li>
             </ul>
+            <div className="mt-2 font-mono text-xs bg-slate-100 p-2 rounded border border-slate-300 inline-block">
+              <strong>{gammaExtremeLabel} = {gammaExtremeValue.toFixed(3)} × 10⁻⁶ mol/m²</strong>
+              {isElectrolyte
+                ? ' → adsorpsi negatif (deplesi ion di antarmuka)'
+                : ' → saturasi monolayer surfaktan di antarmuka'}
+            </div>
           </div>
 
           {/* Kotak Placeholder Tempel Grafik */}
@@ -144,7 +170,7 @@ export const CalculationReport: React.FC<CalculationReportProps> = ({ substances
             {/* Interpretasi Singkat Otomatis */}
             <div className="mt-3 p-2.5 rounded-lg bg-teal-50/70 border border-teal-200 text-xs leading-relaxed text-teal-950">
               <strong className="text-teal-900 font-semibold block mb-0.5">📌 Interpretasi Grafik &amp; Hasil Analisis:</strong>
-              {getInterpretation(sub, rows, regression, maxExcess)}
+              {getInterpretation(sub, rows, regression, keyExcess)}
             </div>
           </div>
         </div>

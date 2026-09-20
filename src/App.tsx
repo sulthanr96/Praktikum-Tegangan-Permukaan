@@ -141,7 +141,7 @@ export default function App() {
     ? calibration.gammaAir
     : getStandardWaterGamma(calibration.tKelvin);
   const currentSub = substances[currentSubstanceKey];
-  const { rows: calculatedRows, regression, maxExcess } = computeAnalysis(
+  const { rows: calculatedRows, regression, maxExcess, minExcess, keyExcess } = computeAnalysis(
     currentSub,
     calibration,
     analysisMode
@@ -198,6 +198,8 @@ export default function App() {
                 calculatedRows={calculatedRows}
                 currentSubstance={currentSub}
                 maxExcess={maxExcess}
+                minExcess={minExcess}
+                keyExcess={keyExcess}
                 onAnalysisModeChange={setAnalysisMode}
                 regression={regression}
                 onSubstanceChange={setCurrentSubstanceKey}

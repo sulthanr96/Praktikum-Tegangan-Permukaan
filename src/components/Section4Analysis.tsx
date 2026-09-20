@@ -8,6 +8,8 @@ interface Section4AnalysisProps {
   calculatedRows: CalculatedDataRow[];
   regression: RegressionStats;
   maxExcess: number;
+  minExcess: number;
+  keyExcess: number;
   onSubstanceChange: (key: SubstanceKey) => void;
 }
 
@@ -18,6 +20,8 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
   calculatedRows,
   regression,
   maxExcess,
+  minExcess,
+  keyExcess,
   onSubstanceChange,
 }) => {
   const svg1Ref = useRef<SVGSVGElement>(null);
@@ -400,10 +404,10 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
               {/* Info Box */}
               <rect x="150" y="55" width="180" height="36" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
               <text x="240" y="70" textAnchor="middle" fill="#334155" fontFamily="JetBrains Mono" fontSize="10" fontWeight="bold">
-                Max Surface Excess (Γ):
+                {currentSubstance.type === 'electrolyte' ? 'Min Surface Excess (Γ_min):' : 'Max Surface Excess (Γ_max):'}
               </text>
               <text x="240" y="84" textAnchor="middle" fill="#475569" fontFamily="JetBrains Mono" fontSize="10">
-                {maxExcess.toFixed(3)} μmol/m²
+                {keyExcess.toFixed(3)} μmol/m²
               </text>
 
               {/* Grid Lines */}
@@ -495,10 +499,16 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
 
           <div className="flex items-center justify-between font-['JetBrains_Mono'] text-xs text-[#42474f] bg-[#eff4ff] px-3.5 py-2.5 rounded-lg border border-[#cbd5e1]/40">
             <span>
-              Saturasi Antarmuka (Γ<sub>maks</sub>):{' '}
-              <strong className="text-[#003159]">{maxExcess.toFixed(3)} μmol/m²</strong>
+              {currentSubstance.type === 'electrolyte' ? (
+                <>Adsorpsi Negatif (Γ<sub>min</sub>):{' '}</>
+              ) : (
+                <>Saturasi Antarmuka (Γ<sub>maks</sub>):{' '}</>
+              )}
+              <strong className="text-[#003159]">{keyExcess.toFixed(3)} μmol/m²</strong>
             </span>
-            <span className="font-bold text-[#7C3AED]">Indikator Monolayer</span>
+            <span className="font-bold text-[#7C3AED]">
+              {currentSubstance.type === 'electrolyte' ? 'Adsorpsi Negatif' : 'Indikator Monolayer'}
+            </span>
           </div>
         </div>
       </div>
@@ -518,51 +528,82 @@ export const Section4Analysis: React.FC<Section4AnalysisProps> = ({
         </div>
 
         <div className="font-['Inter'] text-sm text-[#42474f] leading-relaxed bg-[#eff4ff] p-4 rounded-lg border border-[#cbd5e1]/40">
-          {currentSubstance.type === 'electrolyte' ? (
-            <>
-              <p className="mb-2">
-                <strong className="text-[#D97706]">Karakteristik Elektrolit Kuat (MgCl₂):</strong> Tegangan permukaan larutan
-                terpantau sedikit <em>meningkat</em> seiring penambahan konsentrasi (dari {gammas[0]?.toFixed(2)} mN/m ke{' '}
-                {gammas[4]?.toFixed(2)} mN/m). Hal ini menghasilkan gradien positif{' '}
-                <span className="font-['JetBrains_Mono'] text-xs font-bold">dγ/dC &gt; 0</span>, sehingga nilai surface excess
-                bertanda <strong>negatif (Γ &lt; 0)</strong>.
-              </p>
-              <p className="text-xs text-[#42474f]">
-                <strong>Penjelasan Mikroskopis:</strong> Ion hidrasi Mg²⁺ dan Cl⁻ memiliki energi solvasi yang sangat tinggi di
-                dalam fasa ruah (bulk liquid) air, menciptakan gaya elektrostatik yang menarik molekul air menjauh dari
-                permukaan. Kekurangan molekul zat terlarut pada antarmuka dikenal sebagai <em>negative adsorption</em> (Efek
-                Jones-Ray).
-              </p>
-            </>
-          ) : currentSubstance.type === 'anionic_surfactant' ? (
-            <>
-              <p className="mb-2">
-                <strong className="text-[#7C3AED]">Karakteristik Surfaktan Anionik Murni (SDS):</strong> Teramati penurunan tajam
-                tegangan permukaan dari {gammas[0]?.toFixed(2)} mN/m menjadi {gammas[4]?.toFixed(2)} mN/m dengan turunan{' '}
-                <span className="font-['JetBrains_Mono'] text-xs font-bold">dγ/dC &lt; 0</span>, menghasilkan surface excess{' '}
-                <strong>positif (Γ &gt; 0)</strong> hingga mencapai saturasi {maxExcess.toFixed(2)} μmol/m².
-              </p>
-              <p className="text-xs text-[#42474f]">
-                <strong>Penjelasan Mikroskopis:</strong> Gugus hidrofobik ekor dodesil terdorong keluar menuju fasa udara untuk
-                meminimalkan kontak dengan dipol air murni, sedangkan kepala sulfat polar tetap terhidrasi di air. Hal ini
-                membuktikan pembentukan monolayer rapat pada antarmuka sesuai hukum termodinamika adsorpsi Gibbs.
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="mb-2">
-                <strong className="text-[#0D9488]">Karakteristik Surfaktan Formulasi Komersial (Deterjen):</strong> Penurunan
-                tegangan permukaan berlangsung progresif dan stabil. Karena deterjen mengandung campuran surfaktan linier
-                alkilbenzena sulfonat (LAS) dan builder penstabil, nilai dγ/dC mencerminkan perilaku rata-rata dari berbagai spesi
-                amfifilik.
-              </p>
-              <p className="text-xs text-[#42474f]">
-                <strong>Penjelasan Mikroskopis:</strong> Kurva memperlihatkan kecenderungan plateau pada konsentrasi di atas 0.08 M
-                yang mengindikasikan bahwa permukaan antarmuka telah mendekati kejenuhan monolayer penuh (Critical Micelle
-                Concentration / CMC range).
-              </p>
-            </>
-          )}
+          {(() => {
+            const gFirst = gammas[0] ?? 0;
+            const gLast = gammas[gammas.length - 1] ?? 0;
+            const tren = gLast > gFirst ? 'meningkat' : 'menurun';
+            const delta = Math.abs(gLast - gFirst).toFixed(2);
+            const slopePositive = regression.slope > 0;
+
+            if (currentSubstance.type === 'electrolyte') {
+              const adsorpsiLabel = keyExcess < 0 ? 'negatif (Γ < 0)' : 'positif (Γ > 0)';
+              return (
+                <>
+                  <p className="mb-2">
+                    <strong className="text-[#D97706]">Karakteristik Elektrolit Kuat (MgCl₂):</strong>{' '}
+                    Tegangan permukaan larutan terpantau{' '}
+                    <em>{tren}</em> seiring penambahan konsentrasi (dari {gFirst.toFixed(2)} mN/m ke{' '}
+                    {gLast.toFixed(2)} mN/m, Δ = {gLast > gFirst ? '+' : '−'}{delta} mN/m).
+                    Hal ini menghasilkan gradien{' '}
+                    <span className="font-['JetBrains_Mono'] text-xs font-bold">
+                      dγ/dC {slopePositive ? '> 0' : '< 0'} ({regression.slope.toFixed(2)})
+                    </span>
+                    , sehingga nilai surface excess bertanda <strong>{adsorpsiLabel}</strong>{' '}
+                    dengan Γ<sub>min</sub> = {keyExcess.toFixed(3)} μmol/m².
+                  </p>
+                  <p className="text-xs text-[#42474f]">
+                    <strong>Penjelasan Mikroskopis:</strong>{' '}
+                    {gLast > gFirst
+                      ? 'Ion hidrasi Mg²⁺ dan Cl⁻ memiliki energi solvasi yang sangat tinggi di dalam fasa ruah (bulk liquid) air. Kekurangan molekul zat terlarut pada antarmuka dikenal sebagai negative adsorption (Efek Jones-Ray).'
+                      : 'Pola penurunan γ yang tidak tipikal untuk elektrolit kuat ini mungkin disebabkan oleh adanya surfaktan kontaminan, atau perlu diperiksa kembali ketelitian pengukuran tinggi kapiler (h).'}
+                  </p>
+                </>
+              );
+            } else if (currentSubstance.type === 'anionic_surfactant') {
+              return (
+                <>
+                  <p className="mb-2">
+                    <strong className="text-[#7C3AED]">Karakteristik Surfaktan Anionik Murni (SDS):</strong>{' '}
+                    Terpantau {tren === 'menurun' ? 'penurunan tajam' : 'kenaikan tidak umum'}{' '}
+                    tegangan permukaan dari {gFirst.toFixed(2)} mN/m menjadi {gLast.toFixed(2)} mN/m{' '}
+                    (Δ = {gLast < gFirst ? '−' : '+'}{delta} mN/m) dengan turunan{' '}
+                    <span className="font-['JetBrains_Mono'] text-xs font-bold">
+                      dγ/dC = {regression.slope.toFixed(2)} ({slopePositive ? '> 0' : '< 0'})
+                    </span>
+                    , menghasilkan surface excess{' '}
+                    <strong>{keyExcess > 0 ? `positif (Γ > 0)` : `negatif (Γ < 0)`}</strong>{' '}
+                    hingga mencapai Γ<sub>maks</sub> = {keyExcess.toFixed(3)} μmol/m².
+                  </p>
+                  <p className="text-xs text-[#42474f]">
+                    <strong>Penjelasan Mikroskopis:</strong>{' '}
+                    {tren === 'menurun'
+                      ? 'Gugus hidrofobik ekor dodesil terdorong keluar menuju fasa udara untuk meminimalkan kontak dengan dipol air murni, sedangkan kepala sulfat polar tetap terhidrasi di air. Hal ini membuktikan pembentukan monolayer rapat pada antarmuka sesuai hukum termodinamika adsorpsi Gibbs.'
+                      : 'Data menunjukkan tren yang tidak umum untuk SDS. Periksa kembali data input — kemungkinan ada kesalahan pencatatan tinggi kapiler atau massa piknometer.'}
+                  </p>
+                </>
+              );
+            } else {
+              return (
+                <>
+                  <p className="mb-2">
+                    <strong className="text-[#0D9488]">Karakteristik Surfaktan Formulasi Komersial (Deterjen):</strong>{' '}
+                    Tegangan permukaan {tren} dari {gFirst.toFixed(2)} mN/m ke {gLast.toFixed(2)} mN/m{' '}
+                    (Δ = {gLast < gFirst ? '−' : '+'}{delta} mN/m) dengan dγ/dC ={' '}
+                    <span className="font-['JetBrains_Mono'] text-xs font-bold">
+                      {regression.slope.toFixed(2)} ({slopePositive ? '> 0' : '< 0'})
+                    </span>
+                    . Deterjen mengandung campuran surfaktan linier alkilbenzena sulfonat (LAS) dan builder, sehingga nilai dγ/dC mencerminkan perilaku rata-rata dari berbagai spesi amfifilik. Γ<sub>maks</sub> = {keyExcess.toFixed(3)} μmol/m².
+                  </p>
+                  <p className="text-xs text-[#42474f]">
+                    <strong>Penjelasan Mikroskopis:</strong>{' '}
+                    {tren === 'menurun'
+                      ? 'Kurva memperlihatkan kecenderungan penurunan yang mengindikasikan bahwa molekul deterjen terakumulasi di antarmuka. Pada konsentrasi tinggi, permukaan antarmuka dapat mendekati kejenuhan monolayer (Critical Micelle Concentration range).'
+                      : 'Tren kenaikan tegangan permukaan tidak tipikal untuk surfaktan komersial. Periksa kembali data input — kemungkinan ada kesalahan pengukuran.'}
+                  </p>
+                </>
+              );
+            }
+          })()}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-['JetBrains_Mono'] text-xs">

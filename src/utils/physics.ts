@@ -53,6 +53,8 @@ export function computeAnalysis(
   rows: CalculatedDataRow[];
   regression: RegressionStats;
   maxExcess: number;
+  minExcess: number;
+  keyExcess: number;
 } {
   const rhoAir = calculateRhoAir(cal);
   const gammaAir = (cal.gammaAir !== undefined && cal.gammaAir > 0)
@@ -130,6 +132,7 @@ export function computeAnalysis(
   // surfaceExcessMicro = - (conc * 1000 / (R * T)) * dG
   const rows: CalculatedDataRow[] = [];
   let maxExcess = -Infinity;
+  let minExcess = Infinity;
 
   for (let i = 0; i < n; i++) {
     const conc = sub.concentrations[i];
@@ -137,9 +140,8 @@ export function computeAnalysis(
     const dG = dGammaDC[i];
     const surfaceExcessMicro = - (concMolM3 / (R * T)) * dG;
 
-    if (surfaceExcessMicro > maxExcess) {
-      maxExcess = surfaceExcessMicro;
-    }
+    if (surfaceExcessMicro > maxExcess) maxExcess = surfaceExcessMicro;
+    if (surfaceExcessMicro < minExcess) minExcess = surfaceExcessMicro;
 
     rows.push({
       concentration: conc,
@@ -154,7 +156,11 @@ export function computeAnalysis(
     });
   }
 
-  return { rows, regression, maxExcess };
+  // For electrolytes (MgCl₂), the physically meaningful value is Γ_min (most negative = max negative adsorption)
+  // For surfactants (SDS, Detergen), the physically meaningful value is Γ_max (most positive = max positive adsorption)
+  const keyExcess = sub.type === 'electrolyte' ? minExcess : maxExcess;
+
+  return { rows, regression, maxExcess, minExcess, keyExcess };
 }
 
 /**
