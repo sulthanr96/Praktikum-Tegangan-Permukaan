@@ -163,7 +163,7 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
 
   return (
     <div id="stopwatch" className="flex flex-col gap-4 scroll-mt-32">
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pilih asam">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pilih sampel">
         {ACID_KEYS.map((k) => {
           const s = timerStatus(state.acids[k], state.schedule, now);
           const active = k === acid;
@@ -205,7 +205,11 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
 
           {st.finished ? (
             <div className="rounded-2xl bg-spek-orange-deep px-4 py-3 text-[15px] leading-relaxed">
-              Semua pembacaan terjadwal selesai. Lanjutkan ke penentuan <strong>α∞</strong> (pemanasan ±40 °C, 20 menit).
+              {ACIDS[acid].catalyzed ? (
+                <>Semua pembacaan terjadwal selesai. Lanjutkan ke penentuan <strong>α∞</strong> (pemanasan ±40 °C, 20 menit).</>
+              ) : (
+                <>Semua pembacaan referensi selesai. Referensi tidak memerlukan α∞.</>
+              )}
             </div>
           ) : (
             <div className={`rounded-2xl px-4 py-3 flex items-center justify-between gap-3 ${due ? 'bg-spek-lime text-spek-indigo' : 'bg-spek-orange-deep'}`} aria-live="polite">

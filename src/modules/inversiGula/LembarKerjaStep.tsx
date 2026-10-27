@@ -1,5 +1,5 @@
 import React from 'react';
-import { analyzeAcid, demoState } from './analysis';
+import { analyzeAcid, analyzeReference, demoState } from './analysis';
 import { NumberField, TimeField } from './NumberField';
 import { ACIDS, ACID_KEYS, INITIAL_STATE, scheduleLabel, timerStatus, type AcidKey, type InversiState } from './state';
 import { Card, Note } from './ui';
@@ -17,7 +17,14 @@ const num = (v: number | null | undefined, d = 2) => (v === null || v === undefi
 
 export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setState, now, acid, onSelectAcid, onGoToStopwatch }) => {
   const data = state.acids[acid];
-  const a = analyzeAcid(state, acid);
+  const catalyzed = ACIDS[acid].catalyzed;
+  const a = analyzeAcid(state, 'hcl');
+  const ref = analyzeReference(state);
+  // Baris tabel: sampel HCl menampilkan αt − α∞ & ln; referensi menampilkan Δα dari pembacaan awal
+  const rows = catalyzed
+    ? a.rows.map((r) => ({ ...r, extra: r.diff }))
+    : ref.rows.map((r) => ({ ...r, extra: r.delta, lnDiff: null as number | null, status: 'ok' as const, note: undefined as string | undefined }));
+  const warnings = catalyzed ? a.warnings : ref.warnings;
   const timer = timerStatus(data, state.schedule, now);
 
   const setAcidField = (patch: Partial<typeof data>) =>
@@ -34,11 +41,11 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
     setState(demoState());
   };
   const resetAcid = () => {
-    if (!window.confirm(`Hapus semua data ${ACIDS[acid].short} (waktu, sudut putar, α∞)?`)) return;
+    if (!window.confirm(`Hapus semua data ${ACIDS[acid].short} (waktu, sudut putar${catalyzed ? ', α∞' : ''})?`)) return;
     setAcidField({ ...INITIAL_STATE.acids[acid], times: data.times.map(() => null), alphas: data.alphas.map(() => null) });
   };
 
-  const filled = a.rows.filter((r) => r.t !== null && r.alphaRead !== null).length;
+  const filled = rows.filter((r) => r.t !== null && r.alphaRead !== null).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,7 +79,7 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
         </p>
       </Card>
 
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pilih asam">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pilih sampel">
         {ACID_KEYS.map((k) => {
           const active = k === acid;
           const n = state.acids[k].alphas.filter((v) => v !== null).length;
@@ -117,12 +124,18 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
                 <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">t aktual (mm:ss)</th>
                 <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">α baca (°)</th>
                 <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">αₜ terkoreksi (°)</th>
-                <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">αₜ − α∞ (°)</th>
-                <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap rounded-r-xl">ln(αₜ − α∞)</th>
+                {catalyzed ? (
+                  <>
+                    <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">αₜ − α∞ (°)</th>
+                    <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap rounded-r-xl">ln(αₜ − α∞)</th>
+                  </>
+                ) : (
+                  <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap rounded-r-xl">Δα dari pembacaan awal (°)</th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {a.rows.map((r) => {
+              {rows.map((r) => {
                 const isNext = timer.running && r.index === timer.nextIndex;
                 return (
                   <tr key={r.index} className={isNext ? 'bg-[#FFF7ED]' : ''}>
@@ -135,11 +148,13 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
                       <NumberField label={`α baca baris ${r.index + 1}`} hideLabel value={r.alphaRead} onChange={(v) => setRow('alphas', r.index, v)} tone={isNext ? 'highlight' : 'normal'} />
                     </td>
                     <td className="px-3 py-2 border-b border-spek-violet-tint font-mono font-semibold">{num(r.alphaT)}</td>
-                    <td className="px-3 py-2 border-b border-spek-violet-tint font-mono">{num(r.diff)}</td>
-                    <td className={`px-3 py-2 border-b border-spek-violet-tint font-mono font-bold ${r.status === 'tidak-valid' ? 'text-rose-600' : ''}`} style={r.status === 'ok' ? { color: ACIDS[acid].color } : undefined}>
-                      {r.status === 'tidak-valid' ? 'tak terdefinisi' : num(r.lnDiff, 4)}
-                      {r.note && r.status !== 'tidak-valid' && <span className="block text-[11px] font-sans font-semibold text-amber-700">{r.note}</span>}
-                    </td>
+                    <td className="px-3 py-2 border-b border-spek-violet-tint font-mono" style={!catalyzed ? { color: ACIDS[acid].color, fontWeight: 700 } : undefined}>{num(r.extra)}</td>
+                    {catalyzed && (
+                      <td className={`px-3 py-2 border-b border-spek-violet-tint font-mono font-bold ${r.status === 'tidak-valid' ? 'text-rose-600' : ''}`} style={r.status === 'ok' ? { color: ACIDS[acid].color } : undefined}>
+                        {r.status === 'tidak-valid' ? 'tak terdefinisi' : num(r.lnDiff, 4)}
+                        {r.note && r.status !== 'tidak-valid' && <span className="block text-[11px] font-sans font-semibold text-amber-700">{r.note}</span>}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -147,6 +162,14 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
           </table>
         </div>
 
+        {!catalyzed && (
+          <Note kind="info" title="SAMPEL REFERENSI">
+            25 mL larutan sukrosa + 25 mL <strong>air suling</strong> (tanpa asam), sehingga konsentrasi sukrosanya sama dengan sampel HCl. Tanpa katalis, α
+            diharapkan tetap selama pengamatan. Referensi tidak memerlukan α∞. Baris yang tidak dibaca boleh dikosongkan.
+          </Note>
+        )}
+
+        {catalyzed && (
         <div className="rounded-2xl bg-spek-lime-tint border-2 border-[#D9F99D] p-4 flex flex-wrap items-end gap-4">
           <NumberField
             label="α∞ baca (setelah pemanasan)"
@@ -164,11 +187,12 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
             α∞ diukur setelah pemanasan ±40 °C selama 20 menit (Tahap D). Nilainya seharusnya negatif karena gula invert memutar ke kiri.
           </p>
         </div>
+        )}
       </Card>
 
-      {a.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <div className="flex flex-col gap-2">
-          {a.warnings.map((w, i) => (
+          {warnings.map((w, i) => (
             <Note key={i} kind={w.level === 'warn' ? 'warn' : 'info'} title={w.level === 'warn' ? 'PERIKSA DATA' : 'CATATAN'}>
               {w.text}
             </Note>

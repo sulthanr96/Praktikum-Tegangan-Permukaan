@@ -20,7 +20,7 @@ export const EksporStep: React.FC<EksporStepProps> = ({ state, user, cloud, onPr
 
   const guard = () => {
     if (complete.length === 0) {
-      alert('Data belum cukup. Isi minimal 3 pembacaan dan α∞ untuk salah satu asam di Lembar Kerja.');
+      alert('Data belum cukup. Isi minimal 3 pembacaan dan α∞ sampel HCl di Lembar Kerja.');
       return false;
     }
     if (missing.length && !window.confirm(`Data ${missing.map((k) => ACIDS[k].short).join(' & ')} belum lengkap. Tetap lanjutkan?`)) return false;
@@ -59,7 +59,7 @@ export const EksporStep: React.FC<EksporStepProps> = ({ state, user, cloud, onPr
     },
     {
       title: 'Lembar tabel & grafik',
-      desc: '4 tabel dan 3 grafik bergaris potong, siap digunting dan ditempel di buku laporan.',
+      desc: '4 tabel dan 2 grafik bergaris potong, siap digunting dan ditempel di buku laporan.',
       cta: 'Cetak lembar tempel',
       onClick: () => guard() && onPrint('sheet'),
       tone: 'bg-spek-violet text-white hover:bg-spek-violet-deep',

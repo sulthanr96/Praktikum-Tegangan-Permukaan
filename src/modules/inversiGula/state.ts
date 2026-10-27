@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type AcidKey = 'hcl' | 'mca';
+/** Dua sampel: sukrosa + HCl 4 N, dan sukrosa referensi tanpa asam (kontrol). */
+export type AcidKey = 'hcl' | 'ref';
 
 export interface AcidInfo {
   key: AcidKey;
   label: string;
   short: string;
   formula: string;
-  strong: boolean;
+  /** true = ada katalis asam (dianalisis kinetikanya); false = referensi/kontrol */
+  catalyzed: boolean;
   color: string;
 }
 
 export const ACIDS: Record<AcidKey, AcidInfo> = {
-  hcl: { key: 'hcl', label: 'Asam klorida 4 N', short: 'HCl', formula: 'HCl', strong: true, color: '#C2410C' },
-  mca: { key: 'mca', label: 'Asam monokloroasetat 4 N', short: 'Monokloroasetat', formula: 'ClCH₂COOH', strong: false, color: '#6D28D9' },
+  hcl: { key: 'hcl', label: 'Sukrosa + HCl 4 N', short: 'HCl', formula: 'Sukrosa + HCl', catalyzed: true, color: '#C2410C' },
+  ref: { key: 'ref', label: 'Sukrosa referensi (tanpa asam)', short: 'Referensi', formula: 'Sukrosa + air', catalyzed: false, color: '#6D28D9' },
 };
-export const ACID_KEYS: AcidKey[] = ['hcl', 'mca'];
+export const ACID_KEYS: AcidKey[] = ['hcl', 'ref'];
 
 /**
  * Jadwal baca (menit) menurut Tabel 5.1 modul:
@@ -56,7 +58,7 @@ export const INITIAL_STATE: InversiState = {
   zeroReading: null,
   tubeLength: null,
   temperatureC: null,
-  acids: { hcl: emptyAcid(DEFAULT_SCHEDULE.length), mca: emptyAcid(DEFAULT_SCHEDULE.length) },
+  acids: { hcl: emptyAcid(DEFAULT_SCHEDULE.length), ref: emptyAcid(DEFAULT_SCHEDULE.length) },
 };
 
 const fit = <T,>(arr: T[] | undefined, n: number, fill: T): T[] =>
@@ -80,7 +82,7 @@ export function normalizeState(raw: any): InversiState {
     zeroReading: num(raw.zeroReading),
     tubeLength: num(raw.tubeLength),
     temperatureC: num(raw.temperatureC),
-    acids: { hcl: acid(raw.acids?.hcl), mca: acid(raw.acids?.mca) },
+    acids: { hcl: acid(raw.acids?.hcl), ref: acid(raw.acids?.ref) },
   };
 }
 
@@ -88,7 +90,7 @@ export function normalizeState(raw: any): InversiState {
 export function withSchedule(state: InversiState, schedule: number[]): InversiState {
   const n = schedule.length;
   const resize = (a: AcidData): AcidData => ({ ...a, times: fit(a.times, n, null), alphas: fit(a.alphas, n, null) });
-  return { ...state, schedule, acids: { hcl: resize(state.acids.hcl), mca: resize(state.acids.mca) } };
+  return { ...state, schedule, acids: { hcl: resize(state.acids.hcl), ref: resize(state.acids.ref) } };
 }
 
 export function hasAnyData(s: InversiState) {
@@ -261,7 +263,7 @@ export function useWakeLock(active: boolean) {
   }, [active, request]);
 }
 
-/** Bunyikan peringatan 30 detik sebelum dan tepat saat jadwal baca, untuk tiap asam. */
+/** Bunyikan peringatan 30 detik sebelum dan tepat saat jadwal baca, untuk tiap sampel. */
 export function useReadingAlerts(state: InversiState, now: number) {
   const fired = useRef(new Set<string>());
   useEffect(() => {

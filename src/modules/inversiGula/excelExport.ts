@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver';
 import { analyzeAll, type AcidAnalysis } from './analysis';
 import { alphaChartSeries, lnChartSeries } from './AnalisisStep';
 import { Chart } from './Chart';
-import { ACIDS, ACID_KEYS, scheduleLabel, type InversiState } from './state';
+import { ACIDS, scheduleLabel, type InversiState } from './state';
 
 /** Gambar SVG (string) → PNG base64 lewat canvas. */
 function svgToPng(svg: string, width: number, height: number, scale = 2): Promise<string> {
@@ -32,7 +32,7 @@ const chartSvg = (props: React.ComponentProps<typeof Chart>) =>
   renderToStaticMarkup(React.createElement(Chart, { ...props, width: CHART_W, height: CHART_H, fontFamily: 'Arial, sans-serif', standalone: true }));
 
 export async function exportInversiExcel(state: InversiState, groupName: string) {
-  const { hcl, mca, ratio } = analyzeAll(state);
+  const { hcl, ref, alpha0Diff } = analyzeAll(state);
   const wb = new ExcelJS.Workbook();
   wb.creator = 'SRS Lab';
   wb.created = new Date();
@@ -120,29 +120,62 @@ export async function exportInversiExcel(state: InversiState, groupName: string)
     ws.addRow([]);
   };
   acidTable(hcl, 1);
-  acidTable(mca, 2);
 
-  head(ws.addRow(['Perbandingan', '', 'Nilai']));
+  // Tabel referensi (tanpa asam)
+  {
+    const info = ACIDS.ref;
+    const argb = 'FF' + info.color.slice(1);
+    ws.addRow([`Tabel 2. Data pengamatan — ${info.label}`]).font = { bold: true, size: 12, color: { argb } };
+    head(ws.addRow(['No', 't jadwal (menit)', 't aktual (menit)', 'α baca (°)', 'αt terkoreksi (°)', 'Δα dari awal (°)']), argb);
+    ref.rows.filter((r) => r.t !== null || r.alphaRead !== null).forEach((r) => {
+      const row = ws.addRow([r.index + 1, scheduleLabel(r.scheduled), r.t ?? '', r.alphaRead ?? '', r.alphaT ?? '', r.delta ?? '']);
+      body(row);
+      [3, 4, 5, 6].forEach((c) => (row.getCell(c).numFmt = '0.00'));
+    });
+    ws.addRow([]);
+    head(ws.addRow(['Ringkasan referensi', '', 'Nilai']), argb);
+    ws.mergeCells(`A${ws.rowCount}:B${ws.rowCount}`);
+    ([
+      ['Jumlah pembacaan', ref.n, '0'],
+      ['α rata-rata (°)', ref.mean ?? '—', '0.00'],
+      ['Simpangan baku (°)', ref.sd ?? '—', '0.000'],
+      ['Perubahan Δα (°)', ref.change ?? '—', '0.00'],
+      ['Kemiringan α vs t (°/menit)', ref.trend?.slope ?? '—', '0.000E+00'],
+    ] as [string, any, string][]).forEach(([label, v, f]) => {
+      const r = ws.addRow([label, '', v]);
+      ws.mergeCells(`A${r.number}:B${r.number}`);
+      body(r);
+      r.getCell(1).alignment = { horizontal: 'left' };
+      r.getCell(3).numFmt = f;
+    });
+    ws.addRow([]);
+  }
+
+  head(ws.addRow(['Pengaruh katalis', '', 'Nilai']));
   ws.mergeCells(`A${ws.rowCount}:B${ws.rowCount}`);
-  const cmp = ws.addRow(['k HCl / k monokloroasetat', '', ratio ?? '—']);
-  ws.mergeCells(`A${cmp.number}:B${cmp.number}`);
-  body(cmp);
-  cmp.getCell(3).numFmt = '0.0';
+  ([
+    ['k dengan HCl (menit⁻¹)', hcl.k ?? '—', '0.000E+00'],
+    ['Δα referensi tanpa asam (°)', ref.change ?? '—', '0.00'],
+    ['α₀ HCl (intersep) − α referensi (°)', alpha0Diff ?? '—', '0.00'],
+  ] as [string, any, string][]).forEach(([label, v, f]) => {
+    const r = ws.addRow([label, '', v]);
+    ws.mergeCells(`A${r.number}:B${r.number}`);
+    body(r);
+    r.getCell(1).alignment = { horizontal: 'left' };
+    r.getCell(3).numFmt = f;
+  });
 
   // Grafik
   const gs = wb.addWorksheet('Grafik', { views: [{ showGridLines: false }] });
   const charts: React.ComponentProps<typeof Chart>[] = [
-    ...ACID_KEYS.map((k) => {
-      const a = k === 'hcl' ? hcl : mca;
-      return {
-        title: `ln(αt − α∞) terhadap t — ${ACIDS[k].short}`,
-        subtitle: a.regression ? `y = ${a.regression.intercept.toFixed(4)} ${a.regression.slope >= 0 ? '+' : '−'} ${Math.abs(a.regression.slope).toFixed(5)}t · R² = ${a.regression.r2.toFixed(4)}` : undefined,
-        xLabel: 't (menit)',
-        yLabel: 'ln(αt − α∞)',
-        series: lnChartSeries(a),
-      };
-    }),
-    { title: 'αt terhadap t', subtitle: 'kedua asam', xLabel: 't (menit)', yLabel: 'αt terkoreksi (°)', series: alphaChartSeries([hcl, mca], false), yZeroLine: true },
+    {
+      title: 'ln(αt − α∞) terhadap t — Sukrosa + HCl 4 N',
+      subtitle: hcl.regression ? `y = ${hcl.regression.intercept.toFixed(4)} ${hcl.regression.slope >= 0 ? '+' : '−'} ${Math.abs(hcl.regression.slope).toFixed(5)}t · R² = ${hcl.regression.r2.toFixed(4)}` : undefined,
+      xLabel: 't (menit)',
+      yLabel: 'ln(αt − α∞)',
+      series: lnChartSeries(hcl),
+    },
+    { title: 'αt terhadap t', subtitle: 'dengan HCl dan referensi tanpa asam', xLabel: 't (menit)', yLabel: 'αt terkoreksi (°)', series: alphaChartSeries([hcl, ref], false), yZeroLine: true },
   ];
   let rowAt = 1;
   for (const c of charts) {

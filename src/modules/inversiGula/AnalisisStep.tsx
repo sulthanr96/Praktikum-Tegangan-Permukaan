@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { analyzeAll, type AcidAnalysis } from './analysis';
+import { analyzeAll, REF_TOLERANCE, type AcidAnalysis, type ExpFit, type RefAnalysis } from './analysis';
 import { Chart } from './Chart';
-import { ACIDS, ACID_KEYS, type InversiState } from './state';
+import { ACIDS, type AcidKey, type InversiState } from './state';
 import { Tex } from './Tex';
 import { Card, Note } from './ui';
 
@@ -28,7 +28,9 @@ export function lnChartSeries(a: AcidAnalysis) {
   ];
 }
 
-export function alphaChartSeries(analyses: AcidAnalysis[], withCurve: boolean) {
+type AlphaSource = { key: AcidKey; rows: { t: number | null; alphaT: number | null }[]; expFit?: ExpFit | null };
+
+export function alphaChartSeries(analyses: AlphaSource[], withCurve: boolean) {
   return analyses.map((a) => ({
     label: ACIDS[a.key].short,
     color: ACIDS[a.key].color,
@@ -133,10 +135,45 @@ const AcidResult: React.FC<{ a: AcidAnalysis; method: 'A' | 'B' }> = ({ a, metho
   );
 };
 
+const RefResult: React.FC<{ r: RefAnalysis }> = ({ r }) => {
+  const info = ACIDS.ref;
+  const stable = r.change !== null && Math.abs(r.change) <= REF_TOLERANCE;
+  return (
+    <Card>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <h2 className="m-0 font-heading text-2xl font-extrabold flex items-center gap-2.5">
+          <span className="w-3.5 h-3.5 rounded-full" style={{ background: info.color }} />
+          {info.label}
+        </h2>
+        <span className="text-sm text-spek-muted">{r.n} pembacaan</span>
+      </div>
+      {r.n < 2 ? (
+        <Note kind="info">Belum cukup data. Isi minimal 2 pembacaan referensi di Lembar Kerja.</Note>
+      ) : (
+        <>
+          <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(170px,100%),1fr))]">
+            <div className="text-white rounded-2xl" style={{ background: info.color }}>
+              <Stat label="PERUBAHAN Δα" value={`${fmt(r.change, 2)}°`} big tone="bg-transparent" />
+            </div>
+            <Stat label="α RATA-RATA" value={fmt(r.mean, 2)} unit="°" />
+            <Stat label="SIMPANGAN BAKU" value={fmt(r.sd, 3)} unit="°" />
+            <Stat label="KEMIRINGAN α vs t" value={sci(r.trend?.slope)} unit="°/menit" />
+            <Stat label="STATUS" value={stable ? 'Stabil' : 'Berubah'} tone={stable ? 'bg-spek-lime-tint' : 'bg-spek-orange-tint'} />
+          </div>
+          <p className="m-0 text-[15px] text-spek-muted leading-relaxed">
+            Referensi berfungsi sebagai kontrol: sukrosa dengan pengenceran yang sama tetapi tanpa katalis. α dianggap tetap bila perubahannya ≤ {fmt(REF_TOLERANCE, 1)}°
+            (sekitar ketelitian baca polarimeter). Referensi tidak memerlukan α∞ dan tidak dihitung k-nya.
+          </p>
+        </>
+      )}
+    </Card>
+  );
+};
+
 export const AnalisisStep: React.FC<{ state: InversiState }> = ({ state }) => {
   const [method, setMethod] = useState<'A' | 'B'>('A');
-  const { hcl, mca, ratio } = analyzeAll(state);
-  const warnings = [...hcl.warnings, ...mca.warnings].filter((w) => w.level === 'warn');
+  const { hcl, ref, alpha0Diff } = analyzeAll(state);
+  const warnings = [...hcl.warnings, ...ref.warnings].filter((w) => w.level === 'warn');
 
   return (
     <div className="flex flex-col gap-6">
@@ -181,24 +218,41 @@ export const AnalisisStep: React.FC<{ state: InversiState }> = ({ state }) => {
         </div>
       )}
 
-      {ACID_KEYS.map((k) => (
-        <AcidResult key={k} a={k === 'hcl' ? hcl : mca} method={method} />
-      ))}
+      <AcidResult a={hcl} method={method} />
+      <RefResult r={ref} />
 
       <Card className="bg-spek-indigo text-white">
         <h2 className="m-0 font-heading text-2xl font-extrabold">Pengaruh katalis asam</h2>
         <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))] text-spek-ink">
-          <Stat label="k HCl" value={sci(hcl.k)} unit="menit⁻¹" tone="bg-spek-orange-tint" />
-          <Stat label="k MONOKLOROASETAT" value={sci(mca.k)} unit="menit⁻¹" tone="bg-spek-violet-tint" />
-          <Stat label="RASIO k HCl / k MCA" value={ratio ? `${fmt(ratio, 1)}×` : '—'} tone="bg-spek-lime-tint" />
+          <Stat label="k DENGAN HCl" value={sci(hcl.k)} unit="menit⁻¹" tone="bg-spek-orange-tint" />
+          <Stat label="Δα REFERENSI (TANPA ASAM)" value={ref.change === null ? '—' : `${fmt(ref.change, 2)}°`} tone="bg-spek-violet-tint" />
+          <Stat label="α₀ HCl − α REFERENSI" value={alpha0Diff === null ? '—' : `${fmt(alpha0Diff, 2)}°`} tone="bg-spek-lime-tint" />
         </div>
         <p className="m-0 text-[16px] leading-relaxed text-spek-mist">
-          {ratio
-            ? ratio > 1
-              ? `Reaksi dengan HCl ${fmt(ratio, 1)} kali lebih cepat. Sesuai teori: HCl asam kuat (terionisasi sempurna, [H⁺] ≈ 2 M setelah pencampuran), sedangkan asam monokloroasetat asam lemah (Ka ≈ 1,4 × 10⁻³, [H⁺] ≈ 0,05 M). Karena k = k′[H⁺]ᶜ, [H⁺] yang lebih besar menghasilkan k yang lebih besar.`
-              : 'Reaksi dengan HCl tidak lebih cepat — hasil ini bertentangan dengan teori. Periksa kembali data, terutama α∞ dan titik nol.'
-            : 'Perbandingan muncul setelah data kedua asam lengkap (minimal 3 titik dan α∞ masing-masing).'}
+          {hcl.k !== null && ref.change !== null
+            ? Math.abs(ref.change) <= REF_TOLERANCE
+              ? `Dengan HCl, sudut putar turun hingga separuh perubahan totalnya dalam ±${fmt(hcl.tHalf, 0)} menit, sedangkan tanpa asam α hampir tidak berubah (Δα = ${fmt(ref.change, 2)}°). Ini membuktikan H⁺ berperan sebagai katalis: tanpa katalis hidrolisis sukrosa sangat lambat (waktu paruh pada pH netral ±10 minggu).`
+              : `α referensi ikut berubah (Δα = ${fmt(ref.change, 2)}°). Tanpa asam hal ini tidak diharapkan — periksa kebersihan alat dan suhu sebelum menyimpulkan pengaruh katalis.`
+            : 'Perbandingan muncul setelah data HCl (minimal 3 titik + α∞) dan minimal 2 pembacaan referensi terisi.'}
         </p>
+        {alpha0Diff !== null && (
+          <p className="m-0 text-[15px] leading-relaxed text-spek-mist">
+            α₀ hasil ekstrapolasi HCl ({fmt(hcl.alpha0, 2)}°) dibandingkan α referensi rata-rata ({fmt(ref.mean, 2)}°): selisih {fmt(alpha0Diff, 2)}°. Karena
+            konsentrasi sukrosa dan pengencerannya sama, keduanya seharusnya mendekati nilai yang sama.
+          </p>
+        )}
+        {(hcl.rows.some((x) => x.alphaT !== null) || ref.n > 0) && (
+          <div className="rounded-2xl overflow-hidden w-full max-w-[820px] mx-auto">
+            <Chart
+              title="αₜ terhadap t — dengan dan tanpa katalis"
+              subtitle="HCl: α turun & berbalik negatif · Referensi: α tetap"
+              xLabel="t (menit)"
+              yLabel="αₜ terkoreksi (°)"
+              series={alphaChartSeries([hcl, ref], false)}
+              yZeroLine
+            />
+          </div>
+        )}
       </Card>
     </div>
   );

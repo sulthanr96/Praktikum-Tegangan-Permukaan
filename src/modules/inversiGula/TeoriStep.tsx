@@ -136,26 +136,25 @@ export const TeoriStep: React.FC = () => (
         berubah, sehingga pengaruhnya terserap ke dalam tetapan laju semu <Tex>k</Tex>.
       </Note>
       <p className="m-0 text-[16px] leading-relaxed">
-        Konsekuensi penting: <Tex>k</Tex> <strong>bergantung pada [H⁺]</strong>. Inilah yang dibandingkan dalam praktikum — kedua asam sama-sama 4 N,
-        tetapi kekuatannya berbeda. Setelah dicampur 1 : 1 dengan larutan sukrosa, konsentrasi asam menjadi 2 N:
+        Konsekuensi penting: <Tex>k</Tex> <strong>bergantung pada [H⁺]</strong>. Karena itu praktikum ini memakai dua sampel dengan konsentrasi sukrosa yang
+        sama — satu dengan katalis HCl, satu tanpa asam sebagai pembanding (referensi):
       </p>
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
         <div className="rounded-2xl bg-spek-orange-tint p-4 flex flex-col gap-1">
-          <span className="text-xs font-extrabold text-spek-orange-deep">HCl — ASAM KUAT</span>
-          <span className="text-[15px] leading-relaxed">Terionisasi sempurna:</span>
-          <Tex>{String.raw`[\mathrm{H^+}] \approx 2\ \mathrm{M}`}</Tex>
+          <span className="text-xs font-extrabold text-spek-orange-deep">SUKROSA + HCl 4 N</span>
+          <span className="text-[15px] leading-relaxed">25 mL sukrosa + 25 mL HCl 4 N. HCl terionisasi sempurna, setelah dicampur:</span>
+          <Tex>{String.raw`[\mathrm{H^+}] \approx 2\ \mathrm{M} \;\Rightarrow\; \alpha \text{ turun cepat, lalu negatif}`}</Tex>
         </div>
         <div className="rounded-2xl bg-spek-violet-tint p-4 flex flex-col gap-1">
-          <span className="text-xs font-extrabold text-spek-violet-deep">ClCH₂COOH — ASAM LEMAH</span>
-          <span className="text-[15px] leading-relaxed">
-            <Tex>{String.raw`K_a \approx 1{,}4\times10^{-3}`}</Tex>, sehingga
-          </span>
-          <Tex>{String.raw`[\mathrm{H^+}] \approx \sqrt{K_a C} \approx 0{,}05\ \mathrm{M}`}</Tex>
+          <span className="text-xs font-extrabold text-spek-violet-deep">SUKROSA REFERENSI (TANPA ASAM)</span>
+          <span className="text-[15px] leading-relaxed">25 mL sukrosa + 25 mL air suling. Tanpa katalis, waktu paruh ±10 minggu:</span>
+          <Tex>{String.raw`\alpha \approx \text{tetap selama 120 menit}`}</Tex>
         </div>
       </div>
       <Note kind="tip" title="UNTUK PEMBAHASAN">
-        Karena [H⁺] dari HCl sekitar 40 kali lebih besar, <Tex>k</Tex> untuk HCl diharapkan jauh lebih besar daripada untuk asam monokloroasetat. Pada
-        asam monokloroasetat, perubahan sudut putar selama 120 menit mungkin hanya sedikit — itu wajar, bukan berarti percobaan gagal.
+        Referensi adalah <strong>kontrol</strong>: bila α referensi tetap sementara α sampel HCl turun lalu berbalik negatif, terbukti perubahan itu disebabkan
+        oleh reaksi berkatalis H⁺ — bukan oleh suhu atau alat. Karena konsentrasi sukrosanya sama, α referensi juga bisa dibandingkan dengan α₀ hasil
+        ekstrapolasi sampel HCl.
       </Note>
     </Card>
 

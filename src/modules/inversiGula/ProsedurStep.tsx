@@ -25,7 +25,7 @@ const TOOLS = [
 const CHEMICALS = [
   ['Sukrosa (p.a.)', '20 gram'],
   ['Larutan asam klorida (p.a.)', '4 N'],
-  ['Larutan asam monokloroasetat (p.a.)', '4 N'],
+  ['Air suling (untuk sampel referensi)', '25 mL'],
 ];
 
 const Steps: React.FC<{ items: React.ReactNode[]; start?: number }> = ({ items, start = 1 }) => (
@@ -81,7 +81,7 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
           ))}
         </ul>
         <Note kind="warn" title="KESELAMATAN">
-          HCl 4 N korosif. Asam monokloroasetat korosif <strong>dan beracun bila terserap kulit</strong>. Gunakan sarung tangan, kacamata pelindung, dan jas lab;
+          HCl 4 N <strong>korosif</strong> dan uapnya mengiritasi. Gunakan sarung tangan, kacamata pelindung, dan jas lab; tuang asam di lemari asam bila tersedia;
           bilas segera dengan air mengalir bila terkena kulit.
         </Note>
       </Card>
@@ -121,15 +121,15 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
         start={5}
         items={[
           'Larutkan 20 gram sukrosa dalam 100 mL air suling. Saring bila larutan tidak jernih.',
-          'Pipet 25 mL larutan sukrosa ke dalam labu Erlenmeyer (satu labu untuk tiap asam).',
-          'Pastikan stopwatch siap — di website ini, buka tahap C di bawah dan pilih asam yang akan dipakai.',
+          'Pipet 25 mL larutan sukrosa ke Erlenmeyer 1 (sampel HCl) dan 25 mL lagi ke Erlenmeyer 2 (referensi).',
+          'Siapkan 25 mL HCl 4 N dan 25 mL air suling. Pastikan stopwatch siap — di website ini, buka tahap C di bawah.',
         ]}
       />
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))]">
         {[
           ['Sukrosa awal', '20 g / 100 mL ≈ 0,584 M', 'Mr sukrosa 342,30'],
           ['Setelah dicampur 1 : 1', '≈ 0,292 M sukrosa', 'volume menjadi 50 mL'],
-          ['Asam setelah dicampur', '4 N → 2 N', 'sama untuk kedua asam'],
+          ['HCl setelah dicampur', '4 N → 2 N', 'referensi: tanpa asam'],
         ].map(([title, value, note]) => (
           <div key={title} className="rounded-2xl bg-spek-soft p-4 flex flex-col gap-1">
             <span className="text-xs font-extrabold tracking-wider text-spek-violet-deep">{title.toUpperCase()}</span>
@@ -151,7 +151,7 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
       <Steps
         start={8}
         items={[
-          <>Tambahkan asam dengan volume yang sama (25 mL) ke larutan sukrosa. <strong>Tekan Mulai tepat saat mencampurkan</strong> — itulah t = 0. Aduk sampai rata.</>,
+          <>Tambahkan 25 mL HCl 4 N ke Erlenmeyer 1. <strong>Tekan Mulai (HCl) tepat saat mencampurkan</strong> — itulah t = 0. Aduk sampai rata. Tambahkan 25 mL air suling ke Erlenmeyer 2 (referensi) dan mulai stopwatch Referensi.</>,
           'Segera bilas tabung polarimeter dengan sedikit campuran, lalu isi penuh dengan campuran reaksi.',
           'Baca sudut putar sesuai jadwal. Tekan "Catat waktu baca" tepat saat membaca, lalu ketik sudutnya.',
         ]}
@@ -184,9 +184,9 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
         75, 90, 105, 120. Waktu baca yang dipakai dalam perhitungan selalu <strong>waktu aktual</strong>, jadi sedikit terlambat tidak masalah.
       </Note>
       <Stopwatch state={state} setState={setState} now={now} acid={acid} onSelectAcid={onSelectAcid} />
-      <Note kind="tip" title="DUA ASAM SEKALIGUS?">
-        Kedua stopwatch berjalan sendiri-sendiri. Bila HCl dan monokloroasetat dikerjakan bersamaan, mulai stopwatch masing-masing tepat saat asamnya dicampurkan.
-        Peringatan bunyi muncul 30 detik sebelum dan tepat pada jadwal, di langkah mana pun Anda berada.
+      <Note kind="tip" title="SAMPEL HCl & REFERENSI">
+        Kedua stopwatch berjalan sendiri-sendiri. Prioritaskan jadwal sampel HCl karena α-nya berubah cepat. Referensi boleh dibaca lebih jarang di sela jadwal HCl
+        (sesuai arahan aslab) — baris yang tidak dibaca cukup dikosongkan. Peringatan bunyi muncul 30 detik sebelum dan tepat pada jadwal, di langkah mana pun.
       </Note>
     </Card>
 
@@ -201,7 +201,7 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
       <Steps
         start={11}
         items={[
-          <>Setelah 120 menit, tuang sisa larutan ke Erlenmeyer tertutup dan panaskan di penangas air ±40 °C selama 20 menit.</>,
+          <>Setelah 120 menit, tuang sisa larutan <strong>sampel HCl</strong> ke Erlenmeyer tertutup dan panaskan di penangas air ±40 °C selama 20 menit.</>,
           'Dinginkan kembali ke suhu ruang, lalu ukur sudut putarnya. Nilai ini adalah α∞ (waktu tak hingga / reaksi selesai).',
         ]}
       />

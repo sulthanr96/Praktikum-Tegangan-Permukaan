@@ -1,8 +1,8 @@
 import React from 'react';
-import { analyzeAll, type AcidAnalysis } from './analysis';
+import { analyzeAll, REF_TOLERANCE, type AcidAnalysis } from './analysis';
 import { alphaChartSeries, fmt, lnChartSeries, sci } from './AnalisisStep';
 import { Chart } from './Chart';
-import { ACIDS, ACID_KEYS, formatMinutes, scheduleLabel, type InversiState } from './state';
+import { ACIDS, formatMinutes, scheduleLabel, type InversiState } from './state';
 import { Tex } from './Tex';
 import type { AuthUser } from '../../platform/api';
 
@@ -106,7 +106,8 @@ const WorkedExample: React.FC<{ a: AcidAnalysis; roman: string; state: InversiSt
 };
 
 export const InversiReport: React.FC<PrintProps> = ({ state, user }) => {
-  const { hcl, mca, ratio } = analyzeAll(state);
+  const { hcl, ref, alpha0Diff } = analyzeAll(state);
+  const refStable = ref.change !== null && Math.abs(ref.change) <= REF_TOLERANCE;
   return (
     <div className="max-w-[780px] mx-auto p-6 text-[13px] leading-relaxed font-ui">
       <DocHeader title="Panduan Laporan Praktikum — Laju Inversi Gula" user={user} state={state} />
@@ -118,9 +119,9 @@ export const InversiReport: React.FC<PrintProps> = ({ state, user }) => {
       <div className="space-y-3 text-xs mt-3">
         <div>
           <p className="font-bold m-0 mb-1">A. Judul percobaan</p>
-          <p className="m-0 pl-3 border-l-2 border-slate-300">Penentuan Tetapan Laju Reaksi Inversi Gula (Hidrolisis Sukrosa) Berkatalis Asam dengan Polarimeter</p>
+          <p className="m-0 pl-3 border-l-2 border-slate-300">Penentuan Tetapan Laju Reaksi Inversi Gula (Hidrolisis Sukrosa) Berkatalis Asam Klorida dengan Polarimeter</p>
         </div>
-        {['B. Tujuan percobaan', 'C. Dasar teori', 'D. Alat dan bahan', 'E. MSDS (Akuades, Sukrosa, HCl, Asam monokloroasetat)', 'F. Cara kerja (diagram alir)'].map((t) => (
+        {['B. Tujuan percobaan', 'C. Dasar teori', 'D. Alat dan bahan', 'E. MSDS (Akuades, Sukrosa, HCl)', 'F. Cara kerja (diagram alir)'].map((t) => (
           <div key={t}>
             <p className="font-bold m-0 mb-1">{t}</p>
             <Placeholder>(Dikerjakan di jurnal)</Placeholder>
@@ -134,60 +135,83 @@ export const InversiReport: React.FC<PrintProps> = ({ state, user }) => {
       <H3>G. Data pengamatan</H3>
       <div className="grid grid-cols-2 gap-2">
         <PasteBox>Tabel 1: Kalibrasi &amp; kondisi</PasteBox>
-        <PasteBox>Tabel 2: Data HCl</PasteBox>
-        <PasteBox>Tabel 3: Data asam monokloroasetat</PasteBox>
+        <PasteBox>Tabel 2: Data sukrosa + HCl 4 N</PasteBox>
+        <PasteBox>Tabel 3: Data sukrosa referensi (tanpa asam)</PasteBox>
         <PasteBox>Tabel 4: Ringkasan hasil</PasteBox>
       </div>
 
       <H3>H. Pengolahan data</H3>
       <WorkedExample a={hcl} roman="I" state={state} />
-      <WorkedExample a={mca} roman="II" state={state} />
+      <div className="mb-6 break-inside-avoid">
+        <h4 className="text-sm font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-2">II. {ACIDS.ref.label}</h4>
+        {ref.n < 2 ? (
+          <p className="text-xs italic text-slate-500 ml-2">Data belum lengkap — isi minimal 2 pembacaan referensi.</p>
+        ) : (
+          <div className="ml-2 space-y-2 text-xs">
+            <p className="m-0">Referensi tidak mengandung asam, sehingga tidak dihitung k-nya; yang diamati adalah kestabilan sudut putar.</p>
+            <Tex block>{`\\Delta\\alpha = \\alpha_{\\text{akhir}} - \\alpha_{\\text{awal}} = ${fmt(ref.last, 2)} - ${fmt(ref.first, 2)} = ${fmt(ref.change, 2)}^\\circ`}</Tex>
+            <Tex block>{`\\bar{\\alpha} = ${fmt(ref.mean, 2)}^\\circ \\qquad s = ${fmt(ref.sd, 3)}^\\circ \\qquad (n = ${ref.n})`}</Tex>
+          </div>
+        )}
+      </div>
       <div className="break-inside-avoid">
-        <h4 className="text-sm font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-2">III. Perbandingan kedua asam</h4>
-        <p className="text-xs ml-2 m-0">
-          {ratio ? (
-            <Tex>{`\\frac{k_{\\mathrm{HCl}}}{k_{\\mathrm{ClCH_2COOH}}} = \\frac{${fmt(hcl.k, 5)}}{${fmt(mca.k, 6)}} = ${fmt(ratio, 1)}`}</Tex>
-          ) : (
-            'Belum dapat dihitung — lengkapi data kedua asam.'
+        <h4 className="text-sm font-bold bg-slate-100 p-2 border-l-4 border-slate-700 mb-2">III. Pengaruh katalis</h4>
+        <ul className="text-xs ml-6 list-disc space-y-1 m-0">
+          <li>Dengan HCl: k = {sci(hcl.k)} menit⁻¹, t½ = {fmt(hcl.tHalf, 1)} menit.</li>
+          <li>Tanpa asam: Δα = {fmt(ref.change, 2)}° selama pengamatan ({refStable ? 'praktis tetap' : 'berubah — periksa data'}).</li>
+          {alpha0Diff !== null && (
+            <li>α₀ HCl dari intersep ({fmt(hcl.alpha0, 2)}°) dibanding α referensi rata-rata ({fmt(ref.mean, 2)}°): selisih {fmt(alpha0Diff, 2)}°.</li>
           )}
-        </p>
+        </ul>
         <div className="grid grid-cols-2 gap-2 mt-3">
           <PasteBox>Grafik 1: ln(αₜ − α∞) vs t — HCl</PasteBox>
-          <PasteBox>Grafik 2: ln(αₜ − α∞) vs t — Monokloroasetat</PasteBox>
-          <PasteBox>Grafik 3: αₜ vs t (kedua asam)</PasteBox>
+          <PasteBox>Grafik 2: αₜ vs t — HCl &amp; referensi</PasteBox>
         </div>
       </div>
 
       <H3>I. Pembahasan (poin panduan)</H3>
       <ol className="text-xs space-y-2 pl-5 m-0">
         <li><strong>Orde pertama semu.</strong> Jelaskan mengapa [H₂O] dan [H⁺] dianggap tetap sehingga laju hanya bergantung pada [sukrosa].</li>
-        <li><strong>Inversi sudut putar.</strong> α turun dari {fmt(hcl.alpha0 ?? mca.alpha0, 2)}° (α₀) menuju {fmt(hcl.alphaInf ?? mca.alphaInf, 2)}° (α∞) — kaitkan dengan rotasi spesifik sukrosa (+66,5°), glukosa (+52,7°), dan fruktosa (−92,4°).</li>
-        <li><strong>Kelinearan grafik.</strong> R² HCl = {fmt(hcl.regression?.r2, 4)}, R² monokloroasetat = {fmt(mca.regression?.r2, 4)}. Grafik ln(αₜ − α∞) vs t yang linear membuktikan reaksi berorde satu.</li>
         <li>
-          <strong>Pengaruh katalis.</strong> k HCl = {sci(hcl.k)} menit⁻¹, k monokloroasetat = {sci(mca.k)} menit⁻¹{ratio ? ` (rasio ≈ ${fmt(ratio, 1)})` : ''}. Bahas kekuatan asam,
-          derajat ionisasi, dan [H⁺] efektif (HCl ≈ 2 M; ClCH₂COOH ≈ 0,05 M setelah pencampuran).
+          <strong>Inversi sudut putar.</strong> Pada sampel HCl, α turun dari {fmt(hcl.alpha0, 2)}° (α₀) menuju {fmt(hcl.alphaInf, 2)}° (α∞) — kaitkan dengan rotasi
+          spesifik sukrosa (+66,5°), glukosa (+52,7°), dan fruktosa (−92,4°).
         </li>
-        <li><strong>Waktu paruh.</strong> t½ HCl = {fmt(hcl.tHalf, 1)} menit; t½ monokloroasetat = {fmt(mca.tHalf, 1)} menit. Apa artinya terhadap lama praktikum 120 menit?</li>
+        <li><strong>Kelinearan grafik.</strong> R² = {fmt(hcl.regression?.r2, 4)}. Grafik ln(αₜ − α∞) vs t yang linear membuktikan reaksi berorde satu (semu).</li>
+        <li>
+          <strong>Peran katalis H⁺.</strong> Bandingkan sampel HCl (k = {sci(hcl.k)} menit⁻¹) dengan referensi tanpa asam (Δα = {fmt(ref.change, 2)}°). Jelaskan
+          mengapa tanpa H⁺ hidrolisis sukrosa sangat lambat (waktu paruh ±10 minggu pada pH netral) dan bagaimana H⁺ menurunkan energi aktivasi.
+        </li>
+        <li>
+          <strong>Fungsi referensi.</strong> Referensi menunjukkan bahwa perubahan α pada sampel HCl berasal dari reaksi, bukan dari perubahan suhu atau alat. α
+          referensi juga menjadi pembanding α₀.
+        </li>
+        <li><strong>Waktu paruh.</strong> t½ HCl = {fmt(hcl.tHalf, 1)} menit. Berapa persen sukrosa terhidrolisis setelah 120 menit?</li>
         <li><strong>Sumber kesalahan.</strong> Ketepatan waktu baca, gelembung udara di tabung, fluktuasi suhu, pemanasan α∞ yang kurang/berlebih (karamelisasi), dan pembacaan titik nol.</li>
-        {(hcl.expFit?.ok || mca.expFit?.ok) && (
+        {hcl.expFit?.ok && (
           <li>
-            <strong>Pembanding (opsional).</strong> Fitting eksponensial tanpa α∞ terukur memberi k HCl = {sci(hcl.expFit?.ok ? hcl.expFit.k : null)} menit⁻¹ dan α∞ ={' '}
-            {fmt(hcl.expFit?.ok ? hcl.expFit.alphaInf : null, 2)}°. Bandingkan dengan hasil metode grafik.
+            <strong>Pembanding (opsional).</strong> Fitting eksponensial tanpa α∞ terukur memberi k = {sci(hcl.expFit.k)} menit⁻¹ dan α∞ = {fmt(hcl.expFit.alphaInf, 2)}°.
+            Bandingkan dengan hasil metode grafik.
           </li>
         )}
       </ol>
 
       <H3>J. Kesimpulan (draf)</H3>
       <ol className="text-xs space-y-1.5 pl-5 m-0">
-        <li>Hidrolisis sukrosa berkatalis asam mengikuti kinetika orde pertama semu (grafik ln(αₜ − α∞) terhadap t linear).</li>
-        <li>Tetapan laju dengan HCl 4 N: k = {sci(hcl.k)} menit⁻¹ (t½ = {fmt(hcl.tHalf, 1)} menit).</li>
-        <li>Tetapan laju dengan asam monokloroasetat 4 N: k = {sci(mca.k)} menit⁻¹ (t½ = {fmt(mca.tHalf, 1)} menit).</li>
-        <li>{ratio && ratio > 1 ? `Reaksi dengan HCl ${fmt(ratio, 1)} kali lebih cepat: makin besar [H⁺], makin besar tetapan laju.` : 'Bandingkan k kedua asam dan kaitkan dengan [H⁺].'}</li>
+        <li>Hidrolisis sukrosa berkatalis HCl mengikuti kinetika orde pertama semu (grafik ln(αₜ − α∞) terhadap t linear, R² = {fmt(hcl.regression?.r2, 4)}).</li>
+        <li>Tetapan laju dengan HCl 4 N: k = {sci(hcl.k)} menit⁻¹ = {sci(hcl.k !== null ? hcl.k / 60 : null)} s⁻¹ (t½ = {fmt(hcl.tHalf, 1)} menit).</li>
+        <li>
+          {refStable
+            ? 'Tanpa asam, sudut putar sukrosa praktis tidak berubah: ion H⁺ berperan sebagai katalis yang mempercepat hidrolisis sukrosa.'
+            : 'Bandingkan perubahan α sampel HCl dan referensi untuk menyimpulkan peran H⁺ sebagai katalis.'}
+        </li>
       </ol>
 
       <H3>K. Jawaban pertanyaan &amp; daftar pustaka</H3>
       <div className="text-xs space-y-2">
-        <p className="m-0"><strong>1. Arti orde pertama semu:</strong> reaksi sebenarnya melibatkan sukrosa, air, dan H⁺, tetapi [H₂O] (pelarut berlebih) dan [H⁺] (katalis) praktis tetap, sehingga laju hanya tampak bergantung pada [sukrosa]¹ dengan k = k′[H₂O]ᵇ[H⁺]ᶜ.</p>
+        <p className="m-0">
+          <strong>1. Arti orde pertama semu:</strong> reaksi sebenarnya melibatkan sukrosa, air, dan H⁺, tetapi [H₂O] (pelarut berlebih) dan [H⁺] (katalis) praktis tetap,
+          sehingga laju hanya tampak bergantung pada [sukrosa]¹ dengan k = k′[H₂O]ᵇ[H⁺]ᶜ.
+        </p>
         <p className="m-0"><strong>2. Penurunan persamaan (6) dan (9):</strong> lihat langkah 1 (Teori) di website — tuliskan ulang langkah integrasi dan substitusi sudut putar.</p>
         <ol className="pl-5 m-0 mt-2 space-y-1">
           <li>Atkins, P. W. (1998). <em>Physical Chemistry</em> (6th ed.). Oxford University Press.</li>
@@ -211,87 +235,109 @@ const Cut: React.FC<{ title: string; children: React.ReactNode }> = ({ title, ch
 const td = 'border border-slate-400 px-1.5 py-1 text-center';
 
 export const InversiSheet: React.FC<PrintProps> = ({ state, user }) => {
-  const { hcl, mca, ratio } = analyzeAll(state);
+  const { hcl, ref } = analyzeAll(state);
   return (
     <div className="max-w-[780px] mx-auto p-6 font-ui">
       <DocHeader title="Lembar Tabel & Grafik (Siap Gunting)" user={user} state={state} />
       <Cut title="Tabel 1. Kalibrasi & kondisi">
         <table className="w-full border-collapse text-[11px]">
           <tbody>
-            <tr><td className={td}>Titik nol (air suling)</td><td className={td}>{fmt(state.zeroReading, 2)}°</td><td className={td}>Panjang tabung</td><td className={td}>{fmt(state.tubeLength, 1)} dm</td></tr>
-            <tr><td className={td}>Suhu ruang</td><td className={td}>{fmt(state.temperatureC, 1)} °C</td><td className={td}>Sukrosa / asam setelah campur</td><td className={td}>0,292 M / 2 N</td></tr>
+            <tr>
+              <td className={td}>Titik nol (air suling)</td><td className={td}>{fmt(state.zeroReading, 2)}°</td>
+              <td className={td}>Panjang tabung</td><td className={td}>{fmt(state.tubeLength, 1)} dm</td>
+            </tr>
+            <tr>
+              <td className={td}>Suhu ruang</td><td className={td}>{fmt(state.temperatureC, 1)} °C</td>
+              <td className={td}>Sukrosa / HCl setelah campur</td><td className={td}>0,292 M / 2 N</td>
+            </tr>
           </tbody>
         </table>
       </Cut>
-      {ACID_KEYS.map((k, n) => {
-        const a = k === 'hcl' ? hcl : mca;
-        return (
-          <Cut key={k} title={`Tabel ${n + 2}. Data pengamatan — ${ACIDS[k].label}`}>
-            <table className="w-full border-collapse text-[11px]">
-              <thead>
-                <tr className="bg-slate-100">
-                  {['No', 't jadwal (mnt)', 't aktual', 'α baca (°)', 'αₜ (°)', 'αₜ − α∞ (°)', 'ln(αₜ − α∞)'].map((h) => <th key={h} className={td}>{h}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {a.rows.filter((r) => r.t !== null || r.alphaRead !== null).map((r) => (
-                  <tr key={r.index}>
-                    <td className={td}>{r.index + 1}</td>
-                    <td className={td}>{scheduleLabel(r.scheduled)}</td>
-                    <td className={td}>{formatMinutes(r.t)}</td>
-                    <td className={td}>{fmt(r.alphaRead, 2)}</td>
-                    <td className={td}>{fmt(r.alphaT, 2)}</td>
-                    <td className={td}>{fmt(r.diff, 2)}</td>
-                    <td className={td}>{r.status === 'tidak-valid' ? 'tak terdefinisi' : fmt(r.lnDiff, 4)}</td>
-                  </tr>
-                ))}
-                <tr className="bg-slate-50">
-                  <td className={td} colSpan={3}>α∞ (baca / terkoreksi)</td>
-                  <td className={td}>{fmt(state.acids[k].alphaInf, 2)}</td>
-                  <td className={td}>{fmt(a.alphaInf, 2)}</td>
-                  <td className={td} colSpan={2}></td>
-                </tr>
-              </tbody>
-            </table>
-          </Cut>
-        );
-      })}
-      <Cut title="Tabel 4. Ringkasan hasil (metode grafik)">
+      <Cut title={`Tabel 2. Data pengamatan — ${ACIDS.hcl.label}`}>
         <table className="w-full border-collapse text-[11px]">
           <thead>
-            <tr className="bg-slate-100">{['Asam', 'Kemiringan', 'R²', 'k (menit⁻¹)', 'k (s⁻¹)', 't½ (menit)', 'α₀ (°)'].map((h) => <th key={h} className={td}>{h}</th>)}</tr>
+            <tr className="bg-slate-100">
+              {['No', 't jadwal (mnt)', 't aktual', 'α baca (°)', 'αₜ (°)', 'αₜ − α∞ (°)', 'ln(αₜ − α∞)'].map((h) => <th key={h} className={td}>{h}</th>)}
+            </tr>
           </thead>
           <tbody>
-            {[hcl, mca].map((a) => (
-              <tr key={a.key}>
-                <td className={td}>{ACIDS[a.key].formula}</td>
-                <td className={td}>{fmt(a.regression?.slope, 5)}</td>
-                <td className={td}>{fmt(a.regression?.r2, 4)}</td>
-                <td className={td}>{sci(a.k)}</td>
-                <td className={td}>{sci(a.k !== null ? a.k / 60 : null)}</td>
-                <td className={td}>{fmt(a.tHalf, 1)}</td>
-                <td className={td}>{fmt(a.alpha0, 2)}</td>
+            {hcl.rows.filter((r) => r.t !== null || r.alphaRead !== null).map((r) => (
+              <tr key={r.index}>
+                <td className={td}>{r.index + 1}</td>
+                <td className={td}>{scheduleLabel(r.scheduled)}</td>
+                <td className={td}>{formatMinutes(r.t)}</td>
+                <td className={td}>{fmt(r.alphaRead, 2)}</td>
+                <td className={td}>{fmt(r.alphaT, 2)}</td>
+                <td className={td}>{fmt(r.diff, 2)}</td>
+                <td className={td}>{r.status === 'tidak-valid' ? 'tak terdefinisi' : fmt(r.lnDiff, 4)}</td>
               </tr>
             ))}
-            <tr><td className={td} colSpan={3}>Rasio k HCl / k monokloroasetat</td><td className={td} colSpan={4}>{ratio ? fmt(ratio, 1) : '—'}</td></tr>
+            <tr className="bg-slate-50">
+              <td className={td} colSpan={3}>α∞ (baca / terkoreksi)</td>
+              <td className={td}>{fmt(state.acids.hcl.alphaInf, 2)}</td>
+              <td className={td}>{fmt(hcl.alphaInf, 2)}</td>
+              <td className={td} colSpan={2}></td>
+            </tr>
+          </tbody>
+        </table>
+      </Cut>
+      <Cut title={`Tabel 3. Data pengamatan — ${ACIDS.ref.label}`}>
+        <table className="w-full border-collapse text-[11px]">
+          <thead>
+            <tr className="bg-slate-100">
+              {['No', 't jadwal (mnt)', 't aktual', 'α baca (°)', 'αₜ (°)', 'Δα dari awal (°)'].map((h) => <th key={h} className={td}>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {ref.rows.filter((r) => r.t !== null || r.alphaRead !== null).map((r) => (
+              <tr key={r.index}>
+                <td className={td}>{r.index + 1}</td>
+                <td className={td}>{scheduleLabel(r.scheduled)}</td>
+                <td className={td}>{formatMinutes(r.t)}</td>
+                <td className={td}>{fmt(r.alphaRead, 2)}</td>
+                <td className={td}>{fmt(r.alphaT, 2)}</td>
+                <td className={td}>{fmt(r.delta, 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Cut>
+      <Cut title="Tabel 4. Ringkasan hasil">
+        <table className="w-full border-collapse text-[11px]">
+          <thead>
+            <tr className="bg-slate-100">{['Sampel', 'Kemiringan', 'R²', 'k (menit⁻¹)', 'k (s⁻¹)', 't½ (menit)', 'α₀ (°)'].map((h) => <th key={h} className={td}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className={td}>Sukrosa + HCl 4 N</td>
+              <td className={td}>{fmt(hcl.regression?.slope, 5)}</td>
+              <td className={td}>{fmt(hcl.regression?.r2, 4)}</td>
+              <td className={td}>{sci(hcl.k)}</td>
+              <td className={td}>{sci(hcl.k !== null ? hcl.k / 60 : null)}</td>
+              <td className={td}>{fmt(hcl.tHalf, 1)}</td>
+              <td className={td}>{fmt(hcl.alpha0, 2)}</td>
+            </tr>
+            <tr>
+              <td className={td}>Referensi (tanpa asam)</td>
+              <td className={td} colSpan={5}>Δα = {fmt(ref.change, 2)}° · ᾱ = {fmt(ref.mean, 2)}° · s = {fmt(ref.sd, 3)}° (k tidak dihitung)</td>
+              <td className={td}>{fmt(ref.mean, 2)}</td>
+            </tr>
           </tbody>
         </table>
       </Cut>
       <div style={{ breakBefore: 'page' }} />
-      {[hcl, mca].map((a, i) => (
-        <Cut key={a.key} title={`Grafik ${i + 1}. ln(αₜ − α∞) terhadap t — ${ACIDS[a.key].label}`}>
-          <Chart
-            xLabel="t (menit)"
-            yLabel="ln(αₜ − α∞)"
-            subtitle={a.regression ? `y = ${fmt(a.regression.intercept, 4)} ${a.regression.slope >= 0 ? '+' : '−'} ${fmt(Math.abs(a.regression.slope), 5)}t · R² = ${fmt(a.regression.r2, 4)}` : 'data belum lengkap'}
-            title=" "
-            series={lnChartSeries(a)}
-            height={330}
-          />
-        </Cut>
-      ))}
-      <Cut title="Grafik 3. αₜ terhadap t — kedua asam">
-        <Chart xLabel="t (menit)" yLabel="αₜ terkoreksi (°)" series={alphaChartSeries([hcl, mca], false)} height={330} yZeroLine />
+      <Cut title={`Grafik 1. ln(αₜ − α∞) terhadap t — ${ACIDS.hcl.label}`}>
+        <Chart
+          xLabel="t (menit)"
+          yLabel="ln(αₜ − α∞)"
+          subtitle={hcl.regression ? `y = ${fmt(hcl.regression.intercept, 4)} ${hcl.regression.slope >= 0 ? '+' : '−'} ${fmt(Math.abs(hcl.regression.slope), 5)}t · R² = ${fmt(hcl.regression.r2, 4)}` : 'data belum lengkap'}
+          title=" "
+          series={lnChartSeries(hcl)}
+          height={330}
+        />
+      </Cut>
+      <Cut title="Grafik 2. αₜ terhadap t — sukrosa + HCl dan referensi tanpa asam">
+        <Chart xLabel="t (menit)" yLabel="αₜ terkoreksi (°)" series={alphaChartSeries([hcl, ref], false)} height={330} yZeroLine />
       </Cut>
     </div>
   );
