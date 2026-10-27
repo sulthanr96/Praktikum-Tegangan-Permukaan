@@ -5,9 +5,7 @@ interface HeaderProps {
   totalSteps: number;
   onAutofillDemo: () => void;
   temperatureKelvin: number;
-  role?: string;
-  view?: 'kalkulator' | 'admin';
-  onToggleView?: () => void;
+  onBackToModules?: () => void;
   onLogout?: () => void;
 }
 
@@ -24,9 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalSteps,
   onAutofillDemo,
   temperatureKelvin,
-  role,
-  view,
-  onToggleView,
+  onBackToModules,
   onLogout,
 }) => {
   return (
@@ -79,33 +75,27 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
-          {role === 'admin' && (
+          {onBackToModules && (
             <button
-              onClick={onToggleView}
+              onClick={onBackToModules}
               type="button"
-              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-[#0D9488] text-[#0D9488] font-['JetBrains_Mono'] text-xs font-bold hover:bg-[#0D9488] hover:text-white transition-all flex items-center gap-1.5 active:scale-95 bg-white shrink-0"
-              title={view === 'admin' ? 'Kalkulator' : 'Panel Admin'}
+              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-[#6D28D9] text-[#6D28D9] font-['JetBrains_Mono'] text-xs font-bold hover:bg-[#6D28D9] hover:text-white transition-all flex items-center gap-1.5 active:scale-95 bg-white shrink-0"
+              title="Kembali ke pilihan modul"
             >
-              <span className="material-symbols-outlined text-sm sm:text-sm">
-                {view === 'admin' ? 'calculate' : 'admin_panel_settings'}
-              </span>
-              <span className="hidden sm:inline">
-                {view === 'admin' ? 'Kalkulator' : 'Panel Admin'}
-              </span>
+              <span className="material-symbols-outlined text-sm sm:text-sm">apps</span>
+              <span className="hidden sm:inline">Modul</span>
             </button>
           )}
 
-          {view === 'kalkulator' && (
-            <button
-              onClick={onAutofillDemo}
-              type="button"
-              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-[#003159] text-white font-['JetBrains_Mono'] text-xs font-medium hover:bg-[#0e487a] transition-all flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
-              title="Isi Demo"
-            >
-              <span className="material-symbols-outlined text-sm sm:text-sm">play_circle</span>
-              <span className="hidden sm:inline">Isi Demo</span>
-            </button>
-          )}
+          <button
+            onClick={onAutofillDemo}
+            type="button"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-[#003159] text-white font-['JetBrains_Mono'] text-xs font-medium hover:bg-[#0e487a] transition-all flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+            title="Isi Demo"
+          >
+            <span className="material-symbols-outlined text-sm sm:text-sm">play_circle</span>
+            <span className="hidden sm:inline">Isi Demo</span>
+          </button>
 
           {onLogout && (
             <button

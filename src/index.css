@@ -61,6 +61,29 @@
   --color-scientific-danger: #E11D48;
   --color-grid-line: #E2E8F0;
 
+  /* Platform "Spektrum" (desain B) */
+  --color-spek-indigo: #1E1B4B;
+  --color-spek-indigo-2: #2E2A6B;
+  --color-spek-indigo-3: #4B468F;
+  --color-spek-mist: #C7C4F2;
+  --color-spek-soft: #F5F4FF;
+  --color-spek-ink: #17153B;
+  --color-spek-muted: #5B5A7A;
+  --color-spek-orange: #C2410C;
+  --color-spek-orange-deep: #9A3412;
+  --color-spek-orange-bright: #F97316;
+  --color-spek-orange-tint: #FFEDD5;
+  --color-spek-violet: #6D28D9;
+  --color-spek-violet-deep: #5B21B6;
+  --color-spek-violet-tint: #EDE9FE;
+  --color-spek-lime: #A3E635;
+  --color-spek-lime-tint: #F7FEE7;
+  --color-spek-lime-deep: #3F6212;
+
+  --font-heading: 'Outfit', sans-serif;
+  --font-ui: 'Figtree', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
   --font-display: 'Space Grotesk', sans-serif;
   --font-headline-lg: 'Space Grotesk', sans-serif;
   --font-headline-md: 'Space Grotesk', sans-serif;

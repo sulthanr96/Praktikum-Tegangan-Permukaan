@@ -1,4 +1,4 @@
-import { GlobalCalibration, SubstanceInfo, CalculatedDataRow, RegressionStats, DilutionRow } from '../types';
+import { GlobalCalibration, SubstanceInfo, CalculatedDataRow, RegressionStats, DilutionRow, AnalysisMode } from '../types';
 
 /**
  * Standard pure water surface tension interpolation (IAPWS formulation approximation)
@@ -48,7 +48,7 @@ export function calculateDilution(
 export function computeAnalysis(
   sub: SubstanceInfo,
   cal: GlobalCalibration,
-  mode: 'alurA' | 'alurB'
+  mode: AnalysisMode
 ): {
   rows: CalculatedDataRow[];
   regression: RegressionStats;
