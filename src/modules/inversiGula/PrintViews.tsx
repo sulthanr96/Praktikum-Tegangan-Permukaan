@@ -185,7 +185,7 @@ export const InversiReport: React.FC<PrintProps> = ({ state, user }) => {
           <strong>Validasi α₀ dan α∞.</strong> α₀ dari intersep ({fmt(hcl.alpha0, 2)}°) dibanding α₀ dari sukrosa murni ({fmt(sucrose.expectedAlpha0, 2)}°); rasio
           α∞/α₀ = {fmt(infRatio, 2)} (teori ≈ −0,32). Bahas arti kecocokan atau perbedaannya.
         </li>
-        <li><strong>Waktu paruh.</strong> t½ HCl = {fmt(hcl.tHalf, 1)} menit. Berapa persen sukrosa terhidrolisis setelah 120 menit?</li>
+        <li><strong>Waktu paruh.</strong> t½ HCl = {fmt(hcl.tHalf, 1)} menit. Berapa persen sukrosa terhidrolisis setelah 30 menit pengamatan?</li>
         <li><strong>Sumber kesalahan.</strong> Ketepatan waktu baca, gelembung udara di tabung, fluktuasi suhu, pemanasan α∞ yang kurang/berlebih (karamelisasi), dan pembacaan titik nol.</li>
         {hcl.expFit?.ok && (
           <li>

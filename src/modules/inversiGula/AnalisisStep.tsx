@@ -154,7 +154,7 @@ export const AnalisisStep: React.FC<{ state: InversiState }> = ({ state }) => {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap justify-between items-end gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 4 DARI 5</span>
+          <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 5 DARI 6</span>
           <h1 className="m-0 font-heading text-3xl sm:text-4xl font-extrabold tracking-tight">Analisis data</h1>
           <p className="m-0 text-spek-muted text-[16px] max-w-[680px] leading-relaxed">Dihitung langsung dari Lembar Kerja. Ubah data di sana, hasil di sini ikut berubah.</p>
         </div>

@@ -24,7 +24,7 @@ const ROTATIONS = [
 export const TeoriStep: React.FC = () => (
   <div className="flex flex-col gap-6">
     <div className="flex flex-col gap-3">
-      <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 1 DARI 5</span>
+      <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 1 DARI 6</span>
       <h1 className="m-0 font-heading text-3xl sm:text-4xl font-extrabold tracking-tight">Teori &amp; konsep</h1>
       <p className="m-0 text-spek-muted text-[16px] max-w-[760px] leading-relaxed">
         Ringkasan teori dari modul, ditambah penurunan persamaan (6) dan (9) yang diminta pada bagian Pertanyaan.
@@ -142,7 +142,7 @@ export const TeoriStep: React.FC = () => (
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
         <div className="rounded-2xl bg-spek-orange-tint p-4 flex flex-col gap-1">
           <span className="text-xs font-extrabold text-spek-orange-deep">SUKROSA + HCl 4 N</span>
-          <span className="text-[15px] leading-relaxed">25 mL sukrosa + 25 mL HCl 4 N. HCl terionisasi sempurna, setelah dicampur:</span>
+          <span className="text-[15px] leading-relaxed">12,5 mL sukrosa + 12,5 mL HCl 4 N. HCl terionisasi sempurna, setelah dicampur:</span>
           <Tex>{String.raw`[\mathrm{H^+}] \approx 2\ \mathrm{M} \;\Rightarrow\; \alpha \text{ turun cepat, lalu negatif}`}</Tex>
         </div>
         <div className="rounded-2xl bg-spek-violet-tint p-4 flex flex-col gap-1">

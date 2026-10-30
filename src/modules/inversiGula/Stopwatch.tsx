@@ -6,9 +6,10 @@ import {
   formatMinutes,
   scheduleLabel,
   timerStatus,
-  beep,
+  DEFAULT_SCHEDULE,
   isSoundOn,
   setSoundOn,
+  testSound,
   unlockAudio,
   withSchedule,
   type AcidKey,
@@ -26,12 +27,16 @@ interface StopwatchProps {
 
 const C = 130; // pusat jam
 
-const polar = (r: number, minute: number) => {
-  const a = (minute / 60) * Math.PI * 2;
+/** Titik pada lingkaran jam; `frac` = bagian putaran (0–1). */
+const polarFrac = (r: number, frac: number) => {
+  const a = frac * Math.PI * 2;
   return { x: C + r * Math.sin(a), y: C - r * Math.cos(a) };
 };
 
-/** Jam analog: satu putaran = 60 menit; titik = jadwal baca pada putaran berjalan. */
+/**
+ * Jam analog. Satu putaran = 30 menit bila pengamatan ≤ 30 menit, selain itu 60 menit.
+ * Titik = jadwal baca pada putaran berjalan.
+ */
 const AnalogClock: React.FC<{ elapsedMs: number; schedule: number[]; doneFlags: boolean[]; nextIndex: number; running: boolean }> = ({
   elapsedMs,
   schedule,
@@ -39,23 +44,28 @@ const AnalogClock: React.FC<{ elapsedMs: number; schedule: number[]; doneFlags: 
   nextIndex,
   running,
 }) => {
+  const lastMin = schedule[schedule.length - 1] ?? 30;
+  const span = lastMin <= 30 ? 30 : 60;
+  const laps = Math.max(1, Math.ceil(lastMin / span));
   const minutes = elapsedMs / 60000;
-  const lap = Math.floor(minutes / 60);
-  const inLap = minutes - lap * 60;
+  const lap = Math.floor(minutes / span);
+  const inLap = minutes - lap * span;
   const sec = (elapsedMs / 1000) % 60;
-  const minuteHand = polar(70, inLap);
-  const secondHand = polar(94, sec);
-  const secondTail = polar(-18, sec);
+  const minuteHand = polarFrac(70, inLap / span);
+  const secondHand = polarFrac(94, sec / 60);
+  const secondTail = polarFrac(-18, sec / 60);
   const R_ARC = 108;
   const circ = 2 * Math.PI * R_ARC;
+  const labelStep = span === 30 ? 5 : 10;
+  const majorEvery = span === 30 ? 10 : 5; // 60 garis; garis tebal tiap 5 menit
 
-  // Jadwal yang jatuh di putaran berjalan (menit 60 = akhir putaran 1, dst.)
+  // Jadwal yang jatuh di putaran berjalan (menit `span` = akhir putaran 1, dst.)
   const dots = schedule
-    .map((m, i) => ({ m, i, lapOf: m === 0 ? 0 : Math.ceil(m / 60) - 1 }))
+    .map((m, i) => ({ m, i, lapOf: m === 0 ? 0 : Math.ceil(m / span) - 1 }))
     .filter((d) => d.lapOf === lap);
 
   return (
-    <svg width="100%" viewBox="0 0 260 260" role="img" aria-label={`Jam stopwatch ${formatClock(elapsedMs)}, putaran ${lap + 1}`} className="max-w-[260px] shrink-0">
+    <svg width="100%" viewBox="0 0 260 260" role="img" aria-label={`Jam stopwatch ${formatClock(elapsedMs)}`} className="max-w-[260px] shrink-0">
       <circle cx={C} cy={C} r="124" fill="#FFFFFF" />
       <circle cx={C} cy={C} r={R_ARC} fill="none" stroke="#FFEDD5" strokeWidth="10" />
       {running && (
@@ -67,25 +77,25 @@ const AnalogClock: React.FC<{ elapsedMs: number; schedule: number[]; doneFlags: 
           stroke="#FDBA74"
           strokeWidth="10"
           strokeLinecap="round"
-          strokeDasharray={`${(inLap / 60) * circ} ${circ}`}
+          strokeDasharray={`${Math.min(1, inLap / span) * circ} ${circ}`}
           transform={`rotate(-90 ${C} ${C})`}
         />
       )}
       <g stroke="#1E1B4B" strokeLinecap="round">
         {Array.from({ length: 60 }, (_, i) => {
-          const major = i % 5 === 0;
-          const p1 = polar(118, i), p2 = polar(major ? 104 : 112, i);
+          const major = i % majorEvery === 0;
+          const p1 = polarFrac(118, i / 60), p2 = polarFrac(major ? 104 : 112, i / 60);
           return <line key={i} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} strokeWidth={major ? 3 : 1.2} />;
         })}
       </g>
       <g fontFamily="JetBrains Mono, monospace" fontSize="13" fontWeight="700" fill="#1E1B4B" textAnchor="middle">
-        {[0, 10, 20, 30, 40, 50].map((m) => {
-          const p = polar(84, m);
-          return <text key={m} x={p.x} y={p.y + 5}>{m + lap * 60}</text>;
+        {Array.from({ length: span / labelStep }, (_, j) => j * labelStep).map((m) => {
+          const p = polarFrac(84, m / span);
+          return <text key={m} x={p.x} y={p.y + 5}>{m + lap * span}</text>;
         })}
       </g>
       {dots.map(({ m, i }) => {
-        const p = polar(96, m - lap * 60);
+        const p = polarFrac(96, (m - lap * span) / span);
         if (doneFlags[i]) return <circle key={i} cx={p.x} cy={p.y} r="5" fill="#C2410C" />;
         if (i === nextIndex) return <circle key={i} cx={p.x} cy={p.y} r="9" fill="#A3E635" stroke="#1E1B4B" strokeWidth="2.5" />;
         return <circle key={i} cx={p.x} cy={p.y} r="5" fill="#FFFFFF" stroke="#F97316" strokeWidth="2.5" />;
@@ -95,7 +105,7 @@ const AnalogClock: React.FC<{ elapsedMs: number; schedule: number[]; doneFlags: 
       <circle cx={C} cy={C} r="8" fill="#1E1B4B" />
       <circle cx={C} cy={C} r="3" fill="#C2410C" />
       <text x={C} y={C + 44} textAnchor="middle" fontFamily="Figtree, sans-serif" fontSize="12" fontWeight="700" fill="#5B5A7A">
-        putaran {lap + 1}/{Math.max(1, Math.ceil(schedule[schedule.length - 1] / 60))}
+        {laps > 1 ? `putaran ${Math.min(lap + 1, laps)}/${laps}` : `skala ${span} menit`}
       </text>
     </svg>
   );
@@ -113,7 +123,7 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
     const next = !soundOn;
     setSoundOn(next);
     setSound(next);
-    if (next) beep('warn', true);
+    if (next) testSound();
   };
 
   const update = (patch: Partial<typeof data>) =>
@@ -217,7 +227,7 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
 
           {st.finished ? (
             <div className="rounded-2xl bg-spek-orange-deep px-4 py-3 text-[15px] leading-relaxed">
-              Semua pembacaan terjadwal selesai. Lanjutkan ke penentuan <strong>α∞</strong> (pemanasan ±40 °C, 20 menit).
+              Seluruh pembacaan terjadwal selesai. Lanjutkan dengan pemanasan untuk penentuan <strong>α∞</strong> menggunakan timer pemanasan di bawah.
             </div>
           ) : (
             <div className={`rounded-2xl px-4 py-3 flex items-center justify-between gap-3 ${due ? 'bg-spek-lime text-spek-indigo' : 'bg-spek-orange-deep'}`} aria-live="polite">
@@ -286,8 +296,8 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
 
       <div className="bg-white rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3">
         <div className="flex flex-col flex-[1_1_220px]">
-          <span className="font-bold text-[15px]">Alarm pengingat</span>
-          <span className="text-sm text-spek-muted">"Nit-nit-nit" 30 detik sebelum jadwal, alarm lebih panjang tepat pada jadwal, plus getar di HP.</span>
+          <span className="font-bold text-[15px]">Alarm</span>
+          <span className="text-sm text-spek-muted">Bunyi peringatan 30 detik sebelum jadwal baca dan bunyi alarm tepat pada jadwal (disertai getar pada ponsel).</span>
         </div>
         <button
           type="button"
@@ -296,13 +306,10 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
           onClick={toggleSound}
           className={`min-h-[44px] px-4 rounded-full text-sm font-bold cursor-pointer ${soundOn ? 'bg-spek-lime text-spek-indigo' : 'bg-spek-soft text-spek-muted border-2 border-spek-violet-tint'}`}
         >
-          Bunyi: {soundOn ? 'aktif' : 'mati'}
+          Suara: {soundOn ? 'aktif' : 'nonaktif'}
         </button>
-        <button type="button" onClick={() => beep('warn', true)} className="min-h-[44px] px-4 rounded-full border-2 border-spek-violet-tint text-sm font-bold cursor-pointer hover:bg-spek-soft">
-          Tes "nit-nit-nit"
-        </button>
-        <button type="button" onClick={() => beep('now', true)} className="min-h-[44px] px-4 rounded-full border-2 border-spek-violet-tint text-sm font-bold cursor-pointer hover:bg-spek-soft">
-          Tes alarm baca
+        <button type="button" onClick={testSound} className="min-h-[44px] px-4 rounded-full border-2 border-spek-violet-tint text-sm font-bold cursor-pointer hover:bg-spek-soft">
+          Tes suara
         </button>
       </div>
 
@@ -310,7 +317,7 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
         <summary className="cursor-pointer min-h-[36px] flex items-center font-bold text-[15px]">Jadwal pembacaan ({state.schedule.length} titik)</summary>
         <div className="flex flex-col gap-2 pt-2">
           <p className="m-0 text-sm text-spek-muted leading-relaxed">
-            Default mengikuti Tabel 5.1 modul. Ubah bila aslab menetapkan jadwal lain (menit, dipisah koma). Nilai α yang sudah diisi tetap tersimpan per baris.
+            Jadwal default: 0–30 menit, dibaca segera lalu tiap 5 menit. Dapat diubah sesuai arahan asisten (dalam menit, dipisahkan koma). Nilai α yang sudah diisi tetap tersimpan per baris.
           </p>
           <div className="flex flex-wrap gap-2">
             <input
@@ -322,6 +329,18 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
             />
             <button type="button" onClick={applySchedule} disabled={anyRunning} className="min-h-[46px] px-4 rounded-xl bg-spek-violet text-white font-bold disabled:opacity-50 cursor-pointer">
               Terapkan
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setScheduleText(DEFAULT_SCHEDULE.join(', '));
+                setScheduleError('');
+                setState((s) => withSchedule(s, DEFAULT_SCHEDULE));
+              }}
+              disabled={anyRunning}
+              className="min-h-[46px] px-4 rounded-xl border-2 border-spek-violet-tint font-bold disabled:opacity-50 cursor-pointer"
+            >
+              Jadwal default (30 menit)
             </button>
           </div>
           {anyRunning && <span className="text-xs text-spek-muted">Jadwal tidak bisa diubah saat stopwatch berjalan.</span>}

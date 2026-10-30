@@ -23,11 +23,11 @@ export const ACID_KEYS: AcidKey[] = ['hcl'];
 export const SUCROSE_COLOR = '#6D28D9';
 
 /**
- * Jadwal baca (menit) menurut Tabel 5.1 modul:
- * segera (0), tiap 5 menit s.d. 30, tiap 8 menit s.d. 60, tiap 15 menit s.d. 120.
- * Modul tidak tepat bersambung di menit 60, jadi 60 disisipkan sebagai batas periode.
+ * Jadwal baca (menit): periode pertama Tabel 5.1 modul — segera, lalu tiap 5 menit s.d. 30.
+ * Pengamatan dipersingkat menjadi 30 menit; jadwal bisa diubah di halaman Stopwatch.
  */
-export const DEFAULT_SCHEDULE = [0, 5, 10, 15, 20, 25, 30, 38, 46, 54, 60, 75, 90, 105, 120];
+export const DEFAULT_SCHEDULE = [0, 5, 10, 15, 20, 25, 30];
+export const DEFAULT_HEAT_MINUTES = 20;
 
 export interface AcidData {
   startedAt: number | null;    // epoch ms saat asam dicampurkan (t = 0); null = stopwatch belum jalan
@@ -41,11 +41,13 @@ export interface InversiState {
   schedule: number[];
   zeroReading: number | null;    // pembacaan polarimeter untuk air suling (titik nol)
   sucroseReading: number | null; // pembacaan larutan sukrosa murni (sekali, sebelum HCl)
-  /** false = larutan stok 20 g/100 mL; true = sudah diencerkan 1 : 1 dengan air (setara campuran reaksi) */
+  /** false = larutan stok 10 g/50 mL; true = sudah diencerkan 1 : 1 dengan air (setara campuran reaksi) */
   sucroseDiluted: boolean;
   tubeLength: number | null;     // dm
   temperatureC: number | null;   // °C
   acids: Record<AcidKey, AcidData>;
+  /** Timer pemanasan untuk α∞ */
+  heat: { startedAt: number | null; minutes: number };
 }
 
 const STORAGE_KEY = 'srslab_inversi';
@@ -67,6 +69,7 @@ export const INITIAL_STATE: InversiState = {
   tubeLength: null,
   temperatureC: null,
   acids: { hcl: emptyAcid(DEFAULT_SCHEDULE.length) },
+  heat: { startedAt: null, minutes: DEFAULT_HEAT_MINUTES },
 };
 
 const fit = <T,>(arr: T[] | undefined, n: number, fill: T): T[] =>
@@ -75,7 +78,11 @@ const fit = <T,>(arr: T[] | undefined, n: number, fill: T): T[] =>
 /** Pastikan data (dari browser atau cloud) berbentuk benar. */
 export function normalizeState(raw: any): InversiState {
   if (!raw || raw.version !== 1) return INITIAL_STATE;
-  const schedule: number[] = Array.isArray(raw.schedule) && raw.schedule.length ? raw.schedule.map(Number) : DEFAULT_SCHEDULE;
+  let schedule: number[] = Array.isArray(raw.schedule) && raw.schedule.length ? raw.schedule.map(Number) : DEFAULT_SCHEDULE;
+  // Jadwal lama 120 menit yang belum dipakai mencatat apa pun → ganti ke jadwal 30 menit
+  const OLD_DEFAULT = [0, 5, 10, 15, 20, 25, 30, 38, 46, 54, 60, 75, 90, 105, 120];
+  const unused = !raw.acids?.hcl?.startedAt && !(raw.acids?.hcl?.times ?? []).some((v: any) => typeof v === 'number');
+  if (unused && schedule.join(',') === OLD_DEFAULT.join(',')) schedule = DEFAULT_SCHEDULE;
   const n = schedule.length;
   const acid = (a: any): AcidData => ({
     startedAt: typeof a?.startedAt === 'number' ? a.startedAt : null,
@@ -104,6 +111,10 @@ export function normalizeState(raw: any): InversiState {
     tubeLength: num(raw.tubeLength),
     temperatureC: num(raw.temperatureC),
     acids: { hcl: acid(raw.acids?.hcl) },
+    heat: {
+      startedAt: typeof raw.heat?.startedAt === 'number' ? raw.heat.startedAt : null,
+      minutes: typeof raw.heat?.minutes === 'number' && raw.heat.minutes > 0 ? raw.heat.minutes : DEFAULT_HEAT_MINUTES,
+    },
   };
 }
 
@@ -120,6 +131,7 @@ export function hasAnyData(s: InversiState) {
     s.zeroReading !== null ||
     s.sucroseReading !== null ||
     a.startedAt !== null ||
+    s.heat.startedAt !== null ||
     a.alphaInf !== null ||
     a.times.some((v) => v !== null) ||
     a.alphas.some((v) => v !== null)
@@ -271,8 +283,8 @@ function tone(offset: number, freq: number, dur: number) {
 }
 
 /**
- * warn: "nit-nit-nit" (3 bip pendek) 30 detik sebelum jadwal baca.
- * now : 2 × "nit-nit-nit" lebih panjang tepat pada jadwal baca.
+ * warn: tiga bip pendek, 30 detik sebelum jadwal baca.
+ * now : dua kali tiga bip, tepat pada jadwal baca.
  */
 export function beep(kind: 'warn' | 'now', force = false) {
   if (!force && !isSoundOn()) return;
@@ -335,5 +347,29 @@ export function useReadingAlerts(state: InversiState, now: number) {
         beep('warn');
       }
     }
+    // Timer pemanasan: peringatan 30 detik sebelum selesai dan alarm saat selesai
+    const heat = state.heat;
+    if (heat.startedAt !== null) {
+      const remaining = heat.minutes * 60000 - (now - heat.startedAt);
+      const id = `heat:${heat.startedAt}:${heat.minutes}`;
+      if (remaining <= 0 && remaining > -5000 && !fired.current.has(`${id}:now`)) {
+        fired.current.add(`${id}:now`);
+        beep('now');
+      } else if (remaining <= 30000 && remaining > 0 && !fired.current.has(`${id}:warn`)) {
+        fired.current.add(`${id}:warn`);
+        beep('warn');
+      }
+    }
   }, [state, now]);
+}
+
+/** Sisa waktu timer pemanasan (ms); null bila belum dimulai. */
+export function heatRemaining(state: InversiState, now: number) {
+  return state.heat.startedAt === null ? null : state.heat.minutes * 60000 - (now - state.heat.startedAt);
+}
+
+/** Putar suara peringatan lalu suara alarm, untuk mengecek volume perangkat. */
+export function testSound() {
+  beep('warn', true);
+  window.setTimeout(() => beep('now', true), 900);
 }

@@ -58,11 +58,11 @@ export async function exportInversiExcel(state: InversiState, groupName: string)
   ws.mergeCells(`A${ws.rowCount}:B${ws.rowCount}`);
   [
     ['Titik nol (air suling)', state.zeroReading, '°'],
-    ['α sukrosa murni (baca)', state.sucroseReading, state.sucroseDiluted ? '° (diencerkan 1:1)' : '° (stok 20 g/100 mL)'],
+    ['α sukrosa murni (baca)', state.sucroseReading, state.sucroseDiluted ? '° (diencerkan 1:1)' : '° (10 g/50 mL)'],
     ['α₀ yang diharapkan (campuran)', sucrose.expectedAlpha0 === null ? null : Number(sucrose.expectedAlpha0.toFixed(3)), '°'],
     ['Panjang tabung', state.tubeLength, 'dm'],
     ['Suhu ruang', state.temperatureC, '°C'],
-    ['Sukrosa awal', 0.584, 'M (20 g/100 mL)'],
+    ['Larutan sukrosa', 0.584, 'M (10 g/50 mL)'],
     ['Asam setelah pencampuran', 2, 'N'],
   ].forEach(([label, value, unit]) => {
     const r = ws.addRow([label, '', value ?? '—', unit]);

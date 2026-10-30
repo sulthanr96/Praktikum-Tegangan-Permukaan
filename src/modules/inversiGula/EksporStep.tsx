@@ -70,7 +70,7 @@ export const EksporStep: React.FC<EksporStepProps> = ({ state, user, cloud, onPr
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 5 DARI 5</span>
+        <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 6 DARI 6</span>
         <h1 className="m-0 font-heading text-3xl sm:text-4xl font-extrabold tracking-tight">Ekspor laporan</h1>
         <p className="m-0 text-spek-muted text-[16px] max-w-[680px] leading-relaxed">
           Untuk PDF, pilih "Simpan sebagai PDF" di jendela cetak. Gunakan kertas A4 dan aktifkan "Grafik latar belakang" agar warna tabel ikut tercetak.

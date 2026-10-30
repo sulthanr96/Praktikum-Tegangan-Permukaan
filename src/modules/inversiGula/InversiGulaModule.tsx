@@ -7,10 +7,12 @@ import { EksporStep } from './EksporStep';
 import { LembarKerjaStep } from './LembarKerjaStep';
 import { InversiReport, InversiSheet } from './PrintViews';
 import { ProsedurStep } from './ProsedurStep';
+import { StopwatchStep } from './StopwatchStep';
 import {
   ACIDS,
   ACID_KEYS,
   formatClock,
+  heatRemaining,
   scheduleLabel,
   timerStatus,
   useInversiState,
@@ -22,7 +24,9 @@ import {
 } from './state';
 import { TeoriStep } from './TeoriStep';
 
-const STEPS = ['Teori', 'Prosedur', 'Lembar Kerja', 'Analisis', 'Ekspor'];
+const STEPS = ['Teori', 'Prosedur', 'Stopwatch', 'Lembar Kerja', 'Analisis', 'Ekspor'];
+const STEP_STOPWATCH = 2;
+const STEP_WORKSHEET = 3;
 
 export default function InversiGulaModule({ user, onBackToModules, onLogout }: ModuleProps) {
   const [state, setState] = useInversiState();
@@ -30,11 +34,13 @@ export default function InversiGulaModule({ user, onBackToModules, onLogout }: M
   const [acid, setAcid] = useState<AcidKey>('hcl');
   const [printMode, setPrintMode] = useState<'report' | 'sheet' | null>(null);
   const anyRunning = ACID_KEYS.some((k) => state.acids[k].startedAt !== null);
-  const now = useNow(anyRunning);
+  const heatOn = state.heat.startedAt !== null;
+  const now = useNow(anyRunning || heatOn);
   const cloud = useCloudSync(state, setState, user);
 
   useReadingAlerts(state, now);
-  useWakeLock(anyRunning);
+  useWakeLock(anyRunning || heatOn);
+  const heatLeft = heatRemaining(state, now);
 
   const goTo = (i: number) => {
     setStep(Math.max(0, Math.min(STEPS.length - 1, i)));
@@ -43,8 +49,8 @@ export default function InversiGulaModule({ user, onBackToModules, onLogout }: M
 
   const goToStopwatch = (k?: AcidKey) => {
     if (k) setAcid(k);
-    setStep(1);
-    window.setTimeout(() => document.getElementById('stopwatch')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    setStep(STEP_STOPWATCH);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -97,6 +103,17 @@ export default function InversiGulaModule({ user, onBackToModules, onLogout }: M
                   </button>
                 );
               })}
+              {heatLeft !== null && (
+                <button
+                  type="button"
+                  onClick={() => goToStopwatch()}
+                  className={`min-h-[40px] px-3 rounded-full text-[13px] font-bold flex items-center gap-2 cursor-pointer ${heatLeft <= 0 ? 'bg-spek-lime text-spek-indigo animate-pulse' : 'bg-spek-lime-deep text-white'}`}
+                  title="Buka timer pemanasan"
+                >
+                  Pemanasan
+                  <span className="font-mono tabular-nums">{heatLeft <= 0 ? 'SELESAI' : formatClock(heatLeft)}</span>
+                </button>
+              )}
               <span className={`px-3 py-2 rounded-full text-xs font-bold ${cloudTone}`} title={cloud.message || undefined}>{cloudLabel}</span>
               <span className="hidden sm:inline-flex px-3 py-2 rounded-full bg-spek-indigo-2 text-sm font-semibold">{user.displayName}</span>
               <button type="button" onClick={onLogout} className="min-h-[40px] px-3.5 rounded-full border border-spek-indigo-3 text-sm font-semibold hover:bg-spek-indigo-2 cursor-pointer">
@@ -124,14 +141,21 @@ export default function InversiGulaModule({ user, onBackToModules, onLogout }: M
 
         <main className="flex-1 max-w-[1240px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28">
           {step === 0 && <TeoriStep />}
-          {step === 1 && (
-            <div id="stopwatch-wrap">
-              <ProsedurStep state={state} setState={setState} now={now} acid={acid} onSelectAcid={setAcid} onGoToWorksheet={() => goTo(2)} />
-            </div>
+          {step === 1 && <ProsedurStep onGoToStopwatch={() => goTo(STEP_STOPWATCH)} onGoToWorksheet={() => goTo(STEP_WORKSHEET)} />}
+          {step === 2 && (
+            <StopwatchStep
+              state={state}
+              setState={setState}
+              now={now}
+              acid={acid}
+              onSelectAcid={setAcid}
+              onGoToProcedure={() => goTo(1)}
+              onGoToWorksheet={() => goTo(STEP_WORKSHEET)}
+            />
           )}
-          {step === 2 && <LembarKerjaStep state={state} setState={setState} now={now} onGoToStopwatch={() => goToStopwatch()} />}
-          {step === 3 && <AnalisisStep state={state} />}
-          {step === 4 && <EksporStep state={state} user={user} cloud={cloud} onPrint={setPrintMode} />}
+          {step === 3 && <LembarKerjaStep state={state} setState={setState} now={now} onGoToStopwatch={() => goToStopwatch()} />}
+          {step === 4 && <AnalisisStep state={state} />}
+          {step === 5 && <EksporStep state={state} user={user} cloud={cloud} onPrint={setPrintMode} />}
         </main>
 
         <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-spek-violet-tint">

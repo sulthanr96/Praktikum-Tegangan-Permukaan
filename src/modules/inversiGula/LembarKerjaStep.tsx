@@ -44,7 +44,7 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap justify-between items-end gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 3 DARI 5</span>
+          <span className="text-xs font-extrabold tracking-wider text-spek-orange">LANGKAH 4 DARI 6</span>
           <h1 className="m-0 font-heading text-3xl sm:text-4xl font-extrabold tracking-tight">Lembar kerja</h1>
           <p className="m-0 text-spek-muted text-[16px] max-w-[680px] leading-relaxed">
             Isi pembacaan polarimeter. Waktu dari stopwatch terisi otomatis; boleh juga diketik manual (format mm:ss). Semua data tersimpan otomatis.
@@ -72,7 +72,7 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
               onChange={(e) => setState((s) => ({ ...s, sucroseDiluted: e.target.value === 'encer' }))}
               className="min-h-[46px] px-3 rounded-xl border-2 border-spek-violet-tint bg-spek-soft font-ui text-[15px] font-semibold text-spek-ink outline-none focus:border-spek-violet cursor-pointer"
             >
-              <option value="stok">Stok 20 g/100 mL (belum diencerkan)</option>
+              <option value="stok">Larutan 10 g/50 mL (belum diencerkan)</option>
               <option value="encer">Diencerkan 1 : 1 dengan air</option>
             </select>
           </label>
