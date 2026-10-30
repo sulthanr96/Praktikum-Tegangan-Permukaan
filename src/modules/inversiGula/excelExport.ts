@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { analyzeAll, type AcidAnalysis } from './analysis';
-import { alphaChartSeries, lnChartSeries } from './AnalisisStep';
+import { alphaWithSucroseSeries, lnChartSeries } from './AnalisisStep';
 import { Chart } from './Chart';
 import { ACIDS, scheduleLabel, type InversiState } from './state';
 
@@ -32,7 +32,7 @@ const chartSvg = (props: React.ComponentProps<typeof Chart>) =>
   renderToStaticMarkup(React.createElement(Chart, { ...props, width: CHART_W, height: CHART_H, fontFamily: 'Arial, sans-serif', standalone: true }));
 
 export async function exportInversiExcel(state: InversiState, groupName: string) {
-  const { hcl, ref, alpha0Diff } = analyzeAll(state);
+  const { hcl, sucrose, alpha0Diff, infRatio } = analyzeAll(state);
   const wb = new ExcelJS.Workbook();
   wb.creator = 'SRS Lab';
   wb.created = new Date();
@@ -58,6 +58,8 @@ export async function exportInversiExcel(state: InversiState, groupName: string)
   ws.mergeCells(`A${ws.rowCount}:B${ws.rowCount}`);
   [
     ['Titik nol (air suling)', state.zeroReading, '°'],
+    ['α sukrosa murni (baca)', state.sucroseReading, state.sucroseDiluted ? '° (diencerkan 1:1)' : '° (stok 20 g/100 mL)'],
+    ['α₀ yang diharapkan (campuran)', sucrose.expectedAlpha0 === null ? null : Number(sucrose.expectedAlpha0.toFixed(3)), '°'],
     ['Panjang tabung', state.tubeLength, 'dm'],
     ['Suhu ruang', state.temperatureC, '°C'],
     ['Sukrosa awal', 0.584, 'M (20 g/100 mL)'],
@@ -121,42 +123,14 @@ export async function exportInversiExcel(state: InversiState, groupName: string)
   };
   acidTable(hcl, 1);
 
-  // Tabel referensi (tanpa asam)
-  {
-    const info = ACIDS.ref;
-    const argb = 'FF' + info.color.slice(1);
-    ws.addRow([`Tabel 2. Data pengamatan — ${info.label}`]).font = { bold: true, size: 12, color: { argb } };
-    head(ws.addRow(['No', 't jadwal (menit)', 't aktual (menit)', 'α baca (°)', 'αt terkoreksi (°)', 'Δα dari awal (°)']), argb);
-    ref.rows.filter((r) => r.t !== null || r.alphaRead !== null).forEach((r) => {
-      const row = ws.addRow([r.index + 1, scheduleLabel(r.scheduled), r.t ?? '', r.alphaRead ?? '', r.alphaT ?? '', r.delta ?? '']);
-      body(row);
-      [3, 4, 5, 6].forEach((c) => (row.getCell(c).numFmt = '0.00'));
-    });
-    ws.addRow([]);
-    head(ws.addRow(['Ringkasan referensi', '', 'Nilai']), argb);
-    ws.mergeCells(`A${ws.rowCount}:B${ws.rowCount}`);
-    ([
-      ['Jumlah pembacaan', ref.n, '0'],
-      ['α rata-rata (°)', ref.mean ?? '—', '0.00'],
-      ['Simpangan baku (°)', ref.sd ?? '—', '0.000'],
-      ['Perubahan Δα (°)', ref.change ?? '—', '0.00'],
-      ['Kemiringan α vs t (°/menit)', ref.trend?.slope ?? '—', '0.000E+00'],
-    ] as [string, any, string][]).forEach(([label, v, f]) => {
-      const r = ws.addRow([label, '', v]);
-      ws.mergeCells(`A${r.number}:B${r.number}`);
-      body(r);
-      r.getCell(1).alignment = { horizontal: 'left' };
-      r.getCell(3).numFmt = f;
-    });
-    ws.addRow([]);
-  }
-
-  head(ws.addRow(['Pengaruh katalis', '', 'Nilai']));
+  head(ws.addRow(['Pembanding sukrosa murni', '', 'Nilai']));
   ws.mergeCells(`A${ws.rowCount}:B${ws.rowCount}`);
   ([
-    ['k dengan HCl (menit⁻¹)', hcl.k ?? '—', '0.000E+00'],
-    ['Δα referensi tanpa asam (°)', ref.change ?? '—', '0.00'],
-    ['α₀ HCl (intersep) − α referensi (°)', alpha0Diff ?? '—', '0.00'],
+    ['α sukrosa terkoreksi (°)', sucrose.corrected ?? '—', '0.00'],
+    ['α₀ yang diharapkan (°)', sucrose.expectedAlpha0 ?? '—', '0.00'],
+    ['α₀ dari intersep HCl (°)', hcl.alpha0 ?? '—', '0.00'],
+    ['Selisih α₀ (°)', alpha0Diff ?? '—', '0.00'],
+    ['α∞ / α₀ (teori ≈ −0,32)', infRatio ?? '—', '0.00'],
   ] as [string, any, string][]).forEach(([label, v, f]) => {
     const r = ws.addRow([label, '', v]);
     ws.mergeCells(`A${r.number}:B${r.number}`);
@@ -175,7 +149,7 @@ export async function exportInversiExcel(state: InversiState, groupName: string)
       yLabel: 'ln(αt − α∞)',
       series: lnChartSeries(hcl),
     },
-    { title: 'αt terhadap t', subtitle: 'dengan HCl dan referensi tanpa asam', xLabel: 't (menit)', yLabel: 'αt terkoreksi (°)', series: alphaChartSeries([hcl, ref], false), yZeroLine: true },
+    { title: 'αt terhadap t — Sukrosa + HCl 4 N', subtitle: 'titik berongga di t = 0: α₀ dari sukrosa murni', xLabel: 't (menit)', yLabel: 'αt terkoreksi (°)', series: alphaWithSucroseSeries(hcl, sucrose), yZeroLine: true },
   ];
   let rowAt = 1;
   for (const c of charts) {

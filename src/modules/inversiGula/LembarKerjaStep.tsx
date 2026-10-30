@@ -1,34 +1,27 @@
 import React from 'react';
-import { analyzeAcid, analyzeReference, demoState } from './analysis';
+import { analyzeAcid, analyzeSucrose, demoState } from './analysis';
 import { NumberField, TimeField } from './NumberField';
-import { ACIDS, ACID_KEYS, INITIAL_STATE, scheduleLabel, timerStatus, type AcidKey, type InversiState } from './state';
+import { ACIDS, INITIAL_STATE, SUCROSE_COLOR, scheduleLabel, timerStatus, type InversiState } from './state';
 import { Card, Note } from './ui';
 
 interface LembarKerjaStepProps {
   state: InversiState;
   setState: React.Dispatch<React.SetStateAction<InversiState>>;
   now: number;
-  acid: AcidKey;
-  onSelectAcid: (k: AcidKey) => void;
   onGoToStopwatch: () => void;
 }
 
 const num = (v: number | null | undefined, d = 2) => (v === null || v === undefined || !Number.isFinite(v) ? '—' : v.toFixed(d).replace('.', ',').replace('-', '−'));
 
-export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setState, now, acid, onSelectAcid, onGoToStopwatch }) => {
-  const data = state.acids[acid];
-  const catalyzed = ACIDS[acid].catalyzed;
+export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setState, now, onGoToStopwatch }) => {
+  const data = state.acids.hcl;
   const a = analyzeAcid(state, 'hcl');
-  const ref = analyzeReference(state);
-  // Baris tabel: sampel HCl menampilkan αt − α∞ & ln; referensi menampilkan Δα dari pembacaan awal
-  const rows = catalyzed
-    ? a.rows.map((r) => ({ ...r, extra: r.diff }))
-    : ref.rows.map((r) => ({ ...r, extra: r.delta, lnDiff: null as number | null, status: 'ok' as const, note: undefined as string | undefined }));
-  const warnings = catalyzed ? a.warnings : ref.warnings;
+  const sucrose = analyzeSucrose(state);
   const timer = timerStatus(data, state.schedule, now);
+  const warnings = [...sucrose.warnings, ...a.warnings];
 
   const setAcidField = (patch: Partial<typeof data>) =>
-    setState((s) => ({ ...s, acids: { ...s.acids, [acid]: { ...s.acids[acid], ...patch } } }));
+    setState((s) => ({ ...s, acids: { ...s.acids, hcl: { ...s.acids.hcl, ...patch } } }));
   const setRow = (field: 'times' | 'alphas', i: number, v: number | null) => {
     const arr = [...data[field]];
     arr[i] = v;
@@ -36,16 +29,16 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
   };
 
   const fillDemo = () => {
-    const anyData = ACID_KEYS.some((k) => state.acids[k].alphas.some((v) => v !== null));
+    const anyData = data.alphas.some((v) => v !== null) || state.sucroseReading !== null;
     if (anyData && !window.confirm('Isi data demo akan menimpa data yang sudah ada. Lanjutkan?')) return;
     setState(demoState());
   };
   const resetAcid = () => {
-    if (!window.confirm(`Hapus semua data ${ACIDS[acid].short} (waktu, sudut putar${catalyzed ? ', α∞' : ''})?`)) return;
-    setAcidField({ ...INITIAL_STATE.acids[acid], times: data.times.map(() => null), alphas: data.alphas.map(() => null) });
+    if (!window.confirm('Hapus semua data sukrosa + HCl (waktu, sudut putar, α∞)? Titik nol dan α sukrosa tetap disimpan.')) return;
+    setAcidField({ ...INITIAL_STATE.acids.hcl, times: data.times.map(() => null), alphas: data.alphas.map(() => null) });
   };
 
-  const filled = rows.filter((r) => r.t !== null && r.alphaRead !== null).length;
+  const filled = a.rows.filter((r) => r.t !== null && r.alphaRead !== null).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,49 +55,50 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
             Isi data demo
           </button>
           <button type="button" onClick={resetAcid} className="min-h-[46px] px-4 rounded-full border-2 border-spek-violet-tint bg-white text-sm font-bold text-spek-ink hover:bg-spek-soft cursor-pointer">
-            Kosongkan {ACIDS[acid].short}
+            Kosongkan data HCl
           </button>
         </div>
       </div>
 
       <Card>
-        <h2 className="m-0 font-heading text-xl font-extrabold">Kalibrasi &amp; kondisi</h2>
-        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(180px,100%),1fr))]">
-          <NumberField label="Titik nol (air suling)" value={state.zeroReading} onChange={(v) => setState((s) => ({ ...s, zeroReading: v }))} unit="°" tone="highlight" />
+        <h2 className="m-0 font-heading text-xl font-extrabold">1 · Air suling &amp; 2 · Sukrosa murni</h2>
+        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(190px,100%),1fr))]">
+          <NumberField label="Titik nol — air suling" value={state.zeroReading} onChange={(v) => setState((s) => ({ ...s, zeroReading: v }))} unit="°" tone="highlight" />
+          <NumberField label="α sukrosa murni (sekali, sebelum HCl)" value={state.sucroseReading} onChange={(v) => setState((s) => ({ ...s, sucroseReading: v }))} unit="°" tone="highlight" />
+          <label className="flex flex-col gap-1.5 text-[13px] font-bold text-[#3B3A5C]">
+            Larutan sukrosa yang diukur
+            <select
+              value={state.sucroseDiluted ? 'encer' : 'stok'}
+              onChange={(e) => setState((s) => ({ ...s, sucroseDiluted: e.target.value === 'encer' }))}
+              className="min-h-[46px] px-3 rounded-xl border-2 border-spek-violet-tint bg-spek-soft font-ui text-[15px] font-semibold text-spek-ink outline-none focus:border-spek-violet cursor-pointer"
+            >
+              <option value="stok">Stok 20 g/100 mL (belum diencerkan)</option>
+              <option value="encer">Diencerkan 1 : 1 dengan air</option>
+            </select>
+          </label>
+        </div>
+        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(190px,100%),1fr))]">
           <NumberField label="Panjang tabung" value={state.tubeLength} onChange={(v) => setState((s) => ({ ...s, tubeLength: v }))} unit="dm" placeholder="2" />
           <NumberField label="Suhu ruang" value={state.temperatureC} onChange={(v) => setState((s) => ({ ...s, temperatureC: v }))} unit="°C" placeholder="27" />
+          <div className="rounded-xl px-4 py-2.5 flex flex-col justify-center gap-0.5 text-white" style={{ background: SUCROSE_COLOR }}>
+            <span className="text-xs font-extrabold tracking-wider opacity-85">α₀ YANG DIHARAPKAN (CAMPURAN)</span>
+            <span className="font-mono text-xl font-bold">{num(sucrose.expectedAlpha0)}°</span>
+          </div>
         </div>
-        <p className="m-0 text-sm text-spek-muted">
-          Semua sudut dikoreksi: <span className="font-mono">α = α baca − titik nol</span>. Panjang tabung dan suhu dicatat untuk laporan.
+        <p className="m-0 text-sm text-spek-muted leading-relaxed">
+          Semua sudut dikoreksi: <span className="font-mono">α = α baca − titik nol</span>.{' '}
+          {state.sucroseDiluted
+            ? 'Sukrosa diukur dengan pengenceran yang sama seperti campuran reaksi, jadi α sukrosa langsung menjadi α₀ yang diharapkan.'
+            : 'Larutan stok diencerkan menjadi setengahnya saat dicampur HCl 1 : 1, jadi α₀ yang diharapkan = ½ × α sukrosa terkoreksi.'}
         </p>
       </Card>
 
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pilih sampel">
-        {ACID_KEYS.map((k) => {
-          const active = k === acid;
-          const n = state.acids[k].alphas.filter((v) => v !== null).length;
-          return (
-            <button
-              key={k}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onSelectAcid(k)}
-              className={`min-h-[50px] px-5 rounded-full text-[15px] font-bold flex items-center gap-2 cursor-pointer transition-colors ${
-                active ? 'text-white' : 'bg-white text-spek-ink border-2 border-spek-violet-tint hover:bg-spek-soft'
-              }`}
-              style={active ? { background: ACIDS[k].color } : undefined}
-            >
-              {ACIDS[k].label}
-              <span className={`font-mono text-xs ${active ? 'text-white/80' : 'text-spek-muted'}`}>{n}/{state.schedule.length}</span>
-            </button>
-          );
-        })}
-      </div>
-
       <Card>
         <div className="flex flex-wrap justify-between items-center gap-3">
-          <h2 className="m-0 font-heading text-xl font-extrabold">Data {ACIDS[acid].formula}</h2>
+          <h2 className="m-0 font-heading text-xl font-extrabold flex items-center gap-2.5">
+            <span className="w-3.5 h-3.5 rounded-full" style={{ background: ACIDS.hcl.color }} />
+            3 · {ACIDS.hcl.label} (variasi waktu)
+          </h2>
           <div className="flex flex-wrap items-center gap-2">
             {timer.running && (
               <button type="button" onClick={onGoToStopwatch} className="min-h-[40px] px-3.5 rounded-full bg-spek-orange text-white text-sm font-bold cursor-pointer">
@@ -124,18 +118,12 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
                 <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">t aktual (mm:ss)</th>
                 <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">α baca (°)</th>
                 <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">αₜ terkoreksi (°)</th>
-                {catalyzed ? (
-                  <>
-                    <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">αₜ − α∞ (°)</th>
-                    <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap rounded-r-xl">ln(αₜ − α∞)</th>
-                  </>
-                ) : (
-                  <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap rounded-r-xl">Δα dari pembacaan awal (°)</th>
-                )}
+                <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap">αₜ − α∞ (°)</th>
+                <th className="bg-spek-indigo px-3 py-3 whitespace-nowrap rounded-r-xl">ln(αₜ − α∞)</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {a.rows.map((r) => {
                 const isNext = timer.running && r.index === timer.nextIndex;
                 return (
                   <tr key={r.index} className={isNext ? 'bg-[#FFF7ED]' : ''}>
@@ -148,13 +136,11 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
                       <NumberField label={`α baca baris ${r.index + 1}`} hideLabel value={r.alphaRead} onChange={(v) => setRow('alphas', r.index, v)} tone={isNext ? 'highlight' : 'normal'} />
                     </td>
                     <td className="px-3 py-2 border-b border-spek-violet-tint font-mono font-semibold">{num(r.alphaT)}</td>
-                    <td className="px-3 py-2 border-b border-spek-violet-tint font-mono" style={!catalyzed ? { color: ACIDS[acid].color, fontWeight: 700 } : undefined}>{num(r.extra)}</td>
-                    {catalyzed && (
-                      <td className={`px-3 py-2 border-b border-spek-violet-tint font-mono font-bold ${r.status === 'tidak-valid' ? 'text-rose-600' : ''}`} style={r.status === 'ok' ? { color: ACIDS[acid].color } : undefined}>
-                        {r.status === 'tidak-valid' ? 'tak terdefinisi' : num(r.lnDiff, 4)}
-                        {r.note && r.status !== 'tidak-valid' && <span className="block text-[11px] font-sans font-semibold text-amber-700">{r.note}</span>}
-                      </td>
-                    )}
+                    <td className="px-3 py-2 border-b border-spek-violet-tint font-mono">{num(r.diff)}</td>
+                    <td className={`px-3 py-2 border-b border-spek-violet-tint font-mono font-bold ${r.status === 'tidak-valid' ? 'text-rose-600' : ''}`} style={r.status === 'ok' ? { color: ACIDS.hcl.color } : undefined}>
+                      {r.status === 'tidak-valid' ? 'tak terdefinisi' : num(r.lnDiff, 4)}
+                      {r.note && r.status !== 'tidak-valid' && <span className="block text-[11px] font-sans font-semibold text-amber-700">{r.note}</span>}
+                    </td>
                   </tr>
                 );
               })}
@@ -162,23 +148,8 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
           </table>
         </div>
 
-        {!catalyzed && (
-          <Note kind="info" title="SAMPEL REFERENSI">
-            25 mL larutan sukrosa + 25 mL <strong>air suling</strong> (tanpa asam), sehingga konsentrasi sukrosanya sama dengan sampel HCl. Tanpa katalis, α
-            diharapkan tetap selama pengamatan. Referensi tidak memerlukan α∞. Baris yang tidak dibaca boleh dikosongkan.
-          </Note>
-        )}
-
-        {catalyzed && (
         <div className="rounded-2xl bg-spek-lime-tint border-2 border-[#D9F99D] p-4 flex flex-wrap items-end gap-4">
-          <NumberField
-            label="α∞ baca (setelah pemanasan)"
-            value={data.alphaInf}
-            onChange={(v) => setAcidField({ alphaInf: v })}
-            unit="°"
-            tone="highlight"
-            className="w-56"
-          />
+          <NumberField label="α∞ baca (setelah pemanasan)" value={data.alphaInf} onChange={(v) => setAcidField({ alphaInf: v })} unit="°" tone="highlight" className="w-56" />
           <div className="flex flex-col gap-1 text-[15px]">
             <span className="text-xs font-extrabold tracking-wider text-spek-lime-deep">α∞ TERKOREKSI</span>
             <span className="font-mono text-xl font-bold">{num(a.alphaInf)}°</span>
@@ -187,7 +158,6 @@ export const LembarKerjaStep: React.FC<LembarKerjaStepProps> = ({ state, setStat
             α∞ diukur setelah pemanasan ±40 °C selama 20 menit (Tahap D). Nilainya seharusnya negatif karena gula invert memutar ke kiri.
           </p>
         </div>
-        )}
       </Card>
 
       {warnings.length > 0 && (

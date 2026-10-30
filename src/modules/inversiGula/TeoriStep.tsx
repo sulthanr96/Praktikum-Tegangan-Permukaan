@@ -136,8 +136,8 @@ export const TeoriStep: React.FC = () => (
         berubah, sehingga pengaruhnya terserap ke dalam tetapan laju semu <Tex>k</Tex>.
       </Note>
       <p className="m-0 text-[16px] leading-relaxed">
-        Konsekuensi penting: <Tex>k</Tex> <strong>bergantung pada [H⁺]</strong>. Karena itu praktikum ini memakai dua sampel dengan konsentrasi sukrosa yang
-        sama — satu dengan katalis HCl, satu tanpa asam sebagai pembanding (referensi):
+        Konsekuensi penting: <Tex>k</Tex> <strong>bergantung pada [H⁺]</strong>. Dalam praktikum ini polarimeter dipakai untuk tiga pengukuran: air suling
+        (titik nol), larutan sukrosa murni tanpa asam (sekali di awal), dan sukrosa + HCl pada berbagai waktu:
       </p>
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
         <div className="rounded-2xl bg-spek-orange-tint p-4 flex flex-col gap-1">
@@ -146,15 +146,15 @@ export const TeoriStep: React.FC = () => (
           <Tex>{String.raw`[\mathrm{H^+}] \approx 2\ \mathrm{M} \;\Rightarrow\; \alpha \text{ turun cepat, lalu negatif}`}</Tex>
         </div>
         <div className="rounded-2xl bg-spek-violet-tint p-4 flex flex-col gap-1">
-          <span className="text-xs font-extrabold text-spek-violet-deep">SUKROSA REFERENSI (TANPA ASAM)</span>
-          <span className="text-[15px] leading-relaxed">25 mL sukrosa + 25 mL air suling. Tanpa katalis, waktu paruh ±10 minggu:</span>
-          <Tex>{String.raw`\alpha \approx \text{tetap selama 120 menit}`}</Tex>
+          <span className="text-xs font-extrabold text-spek-violet-deep">SUKROSA MURNI (TANPA ASAM)</span>
+          <span className="text-[15px] leading-relaxed">Dibaca sekali sebelum HCl ditambahkan. Tanpa katalis, waktu paruh ±10 minggu, jadi α-nya tetap:</span>
+          <Tex>{String.raw`\alpha_0 \approx \tfrac{1}{2}\,\alpha_{\text{sukrosa stok}} \;(\text{pengenceran } 1:1)`}</Tex>
         </div>
       </div>
       <Note kind="tip" title="UNTUK PEMBAHASAN">
-        Referensi adalah <strong>kontrol</strong>: bila α referensi tetap sementara α sampel HCl turun lalu berbalik negatif, terbukti perubahan itu disebabkan
-        oleh reaksi berkatalis H⁺ — bukan oleh suhu atau alat. Karena konsentrasi sukrosanya sama, α referensi juga bisa dibandingkan dengan α₀ hasil
-        ekstrapolasi sampel HCl.
+        Sukrosa murni adalah <strong>pembanding</strong>: tanpa H⁺ sudut putarnya tetap, sedangkan dengan HCl α turun lalu berbalik negatif — bukti peran H⁺
+        sebagai katalis. Karena larutan stok diencerkan setengahnya saat dicampur HCl 1 : 1, α₀ campuran ≈ ½ × α sukrosa stok. Nilai ini dibandingkan dengan
+        α₀ hasil ekstrapolasi grafik untuk mengecek konsistensi data dan α∞.
       </Note>
     </Card>
 

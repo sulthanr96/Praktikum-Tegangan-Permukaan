@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { analyzeAll, REF_TOLERANCE, type AcidAnalysis, type ExpFit, type RefAnalysis } from './analysis';
+import { analyzeAll, type AcidAnalysis, type ExpFit, type SucroseAnalysis } from './analysis';
 import { Chart } from './Chart';
-import { ACIDS, type AcidKey, type InversiState } from './state';
+import { ACIDS, SUCROSE_COLOR, type AcidKey, type InversiState } from './state';
 import { Tex } from './Tex';
 import { Card, Note } from './ui';
 
@@ -40,6 +40,16 @@ export function alphaChartSeries(analyses: AlphaSource[], withCurve: boolean) {
         ? ((fit) => (t: number) => fit.alphaInf + (fit.alpha0 - fit.alphaInf) * Math.exp(-fit.k * t))(a.expFit)
         : undefined,
   }));
+}
+
+
+/** αt sukrosa + HCl, ditambah titik berongga α₀ harapan (dari sukrosa murni) di t = 0. */
+export function alphaWithSucroseSeries(hcl: AcidAnalysis, sucrose: SucroseAnalysis) {
+  const series = alphaChartSeries([hcl], false);
+  if (sucrose.expectedAlpha0 !== null) {
+    series.push({ label: 'α₀ sukrosa murni', color: SUCROSE_COLOR, points: [{ x: 0, y: sucrose.expectedAlpha0 }], curve: undefined, hollow: true } as any);
+  }
+  return series;
 }
 
 const Stat: React.FC<{ label: string; value: React.ReactNode; unit?: string; big?: boolean; tone?: string }> = ({ label, value, unit, big, tone }) => (
@@ -135,45 +145,10 @@ const AcidResult: React.FC<{ a: AcidAnalysis; method: 'A' | 'B' }> = ({ a, metho
   );
 };
 
-const RefResult: React.FC<{ r: RefAnalysis }> = ({ r }) => {
-  const info = ACIDS.ref;
-  const stable = r.change !== null && Math.abs(r.change) <= REF_TOLERANCE;
-  return (
-    <Card>
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <h2 className="m-0 font-heading text-2xl font-extrabold flex items-center gap-2.5">
-          <span className="w-3.5 h-3.5 rounded-full" style={{ background: info.color }} />
-          {info.label}
-        </h2>
-        <span className="text-sm text-spek-muted">{r.n} pembacaan</span>
-      </div>
-      {r.n < 2 ? (
-        <Note kind="info">Belum cukup data. Isi minimal 2 pembacaan referensi di Lembar Kerja.</Note>
-      ) : (
-        <>
-          <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(170px,100%),1fr))]">
-            <div className="text-white rounded-2xl" style={{ background: info.color }}>
-              <Stat label="PERUBAHAN Δα" value={`${fmt(r.change, 2)}°`} big tone="bg-transparent" />
-            </div>
-            <Stat label="α RATA-RATA" value={fmt(r.mean, 2)} unit="°" />
-            <Stat label="SIMPANGAN BAKU" value={fmt(r.sd, 3)} unit="°" />
-            <Stat label="KEMIRINGAN α vs t" value={sci(r.trend?.slope)} unit="°/menit" />
-            <Stat label="STATUS" value={stable ? 'Stabil' : 'Berubah'} tone={stable ? 'bg-spek-lime-tint' : 'bg-spek-orange-tint'} />
-          </div>
-          <p className="m-0 text-[15px] text-spek-muted leading-relaxed">
-            Referensi berfungsi sebagai kontrol: sukrosa dengan pengenceran yang sama tetapi tanpa katalis. α dianggap tetap bila perubahannya ≤ {fmt(REF_TOLERANCE, 1)}°
-            (sekitar ketelitian baca polarimeter). Referensi tidak memerlukan α∞ dan tidak dihitung k-nya.
-          </p>
-        </>
-      )}
-    </Card>
-  );
-};
-
 export const AnalisisStep: React.FC<{ state: InversiState }> = ({ state }) => {
   const [method, setMethod] = useState<'A' | 'B'>('A');
-  const { hcl, ref, alpha0Diff } = analyzeAll(state);
-  const warnings = [...hcl.warnings, ...ref.warnings].filter((w) => w.level === 'warn');
+  const { hcl, sucrose, alpha0Diff, infRatio } = analyzeAll(state);
+  const warnings = [...sucrose.warnings, ...hcl.warnings].filter((w) => w.level === 'warn');
 
   return (
     <div className="flex flex-col gap-6">
@@ -219,36 +194,37 @@ export const AnalisisStep: React.FC<{ state: InversiState }> = ({ state }) => {
       )}
 
       <AcidResult a={hcl} method={method} />
-      <RefResult r={ref} />
 
       <Card className="bg-spek-indigo text-white">
-        <h2 className="m-0 font-heading text-2xl font-extrabold">Pengaruh katalis asam</h2>
-        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))] text-spek-ink">
-          <Stat label="k DENGAN HCl" value={sci(hcl.k)} unit="menit⁻¹" tone="bg-spek-orange-tint" />
-          <Stat label="Δα REFERENSI (TANPA ASAM)" value={ref.change === null ? '—' : `${fmt(ref.change, 2)}°`} tone="bg-spek-violet-tint" />
-          <Stat label="α₀ HCl − α REFERENSI" value={alpha0Diff === null ? '—' : `${fmt(alpha0Diff, 2)}°`} tone="bg-spek-lime-tint" />
+        <h2 className="m-0 font-heading text-2xl font-extrabold">Sukrosa murni sebagai pembanding</h2>
+        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(190px,100%),1fr))] text-spek-ink">
+          <Stat label="α SUKROSA TERKOREKSI" value={fmt(sucrose.corrected, 2)} unit="°" tone="bg-spek-violet-tint" />
+          <Stat label="α₀ DIHARAPKAN" value={fmt(sucrose.expectedAlpha0, 2)} unit="°" tone="bg-spek-violet-tint" />
+          <Stat label="α₀ DARI INTERSEP HCl" value={fmt(hcl.alpha0, 2)} unit="°" tone="bg-spek-orange-tint" />
+          <Stat label="SELISIH" value={alpha0Diff === null ? '—' : `${fmt(alpha0Diff, 2)}°`} tone="bg-spek-lime-tint" />
+          <Stat label="α∞ / α₀ (TEORI ≈ −0,32)" value={fmt(infRatio, 2)} tone="bg-spek-lime-tint" />
         </div>
         <p className="m-0 text-[16px] leading-relaxed text-spek-mist">
-          {hcl.k !== null && ref.change !== null
-            ? Math.abs(ref.change) <= REF_TOLERANCE
-              ? `Dengan HCl, sudut putar turun hingga separuh perubahan totalnya dalam ±${fmt(hcl.tHalf, 0)} menit, sedangkan tanpa asam α hampir tidak berubah (Δα = ${fmt(ref.change, 2)}°). Ini membuktikan H⁺ berperan sebagai katalis: tanpa katalis hidrolisis sukrosa sangat lambat (waktu paruh pada pH netral ±10 minggu).`
-              : `α referensi ikut berubah (Δα = ${fmt(ref.change, 2)}°). Tanpa asam hal ini tidak diharapkan — periksa kebersihan alat dan suhu sebelum menyimpulkan pengaruh katalis.`
-            : 'Perbandingan muncul setelah data HCl (minimal 3 titik + α∞) dan minimal 2 pembacaan referensi terisi.'}
+          {sucrose.expectedAlpha0 === null
+            ? 'Isi α sukrosa murni (dibaca sekali sebelum HCl ditambahkan) di Lembar Kerja untuk perbandingan ini.'
+            : alpha0Diff === null
+            ? `Sukrosa tanpa asam memberi α₀ yang diharapkan ${fmt(sucrose.expectedAlpha0, 2)}°. Perbandingan dengan α₀ hasil ekstrapolasi muncul setelah data HCl (minimal 3 titik + α∞) lengkap.`
+            : Math.abs(alpha0Diff) <= 0.5
+            ? `α₀ hasil ekstrapolasi grafik (${fmt(hcl.alpha0, 2)}°) cocok dengan α₀ dari sukrosa murni (${fmt(sucrose.expectedAlpha0, 2)}°), selisih ${fmt(alpha0Diff, 2)}°. Artinya data mengikuti kinetika orde pertama sejak t = 0, dan α∞ terukur konsisten.`
+            : `α₀ hasil ekstrapolasi (${fmt(hcl.alpha0, 2)}°) berbeda ${fmt(alpha0Diff, 2)}° dari α₀ sukrosa murni (${fmt(sucrose.expectedAlpha0, 2)}°). Kemungkinan penyebab: α∞ kurang tepat (pemanasan belum tuntas), pengenceran tidak tepat 1 : 1, atau suhu berbeda saat pengukuran.`}
         </p>
-        {alpha0Diff !== null && (
-          <p className="m-0 text-[15px] leading-relaxed text-spek-mist">
-            α₀ hasil ekstrapolasi HCl ({fmt(hcl.alpha0, 2)}°) dibandingkan α referensi rata-rata ({fmt(ref.mean, 2)}°): selisih {fmt(alpha0Diff, 2)}°. Karena
-            konsentrasi sukrosa dan pengencerannya sama, keduanya seharusnya mendekati nilai yang sama.
-          </p>
-        )}
-        {(hcl.rows.some((x) => x.alphaT !== null) || ref.n > 0) && (
+        <p className="m-0 text-[15px] leading-relaxed text-spek-mist">
+          Sukrosa tanpa asam juga menjadi pembanding peran katalis: sebelum HCl ditambahkan, sudut putar sukrosa stabil (hidrolisis tanpa katalis berwaktu paruh
+          ±10 minggu), sedangkan dengan HCl α turun hingga berbalik negatif dalam hitungan menit.
+        </p>
+        {hcl.rows.some((x) => x.alphaT !== null) && (
           <div className="rounded-2xl overflow-hidden w-full max-w-[820px] mx-auto">
             <Chart
-              title="αₜ terhadap t — dengan dan tanpa katalis"
-              subtitle="HCl: α turun & berbalik negatif · Referensi: α tetap"
+              title="αₜ terhadap t — sukrosa + HCl"
+              subtitle="titik berongga di t = 0: α₀ yang diharapkan dari sukrosa murni"
               xLabel="t (menit)"
               yLabel="αₜ terkoreksi (°)"
-              series={alphaChartSeries([hcl, ref], false)}
+              series={alphaWithSucroseSeries(hcl, sucrose)}
               yZeroLine
             />
           </div>

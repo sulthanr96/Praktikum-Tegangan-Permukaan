@@ -1,23 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** Dua sampel: sukrosa + HCl 4 N, dan sukrosa referensi tanpa asam (kontrol). */
-export type AcidKey = 'hcl' | 'ref';
+/**
+ * Pengukuran polarimeter dalam praktikum:
+ *  1. air suling            → titik nol
+ *  2. larutan sukrosa murni → satu kali di awal (pembanding α₀)
+ *  3. sukrosa + HCl 4 N     → deret waktu (dianalisis kinetikanya)
+ */
+export type AcidKey = 'hcl';
 
 export interface AcidInfo {
   key: AcidKey;
   label: string;
   short: string;
   formula: string;
-  /** true = ada katalis asam (dianalisis kinetikanya); false = referensi/kontrol */
-  catalyzed: boolean;
   color: string;
 }
 
 export const ACIDS: Record<AcidKey, AcidInfo> = {
-  hcl: { key: 'hcl', label: 'Sukrosa + HCl 4 N', short: 'HCl', formula: 'Sukrosa + HCl', catalyzed: true, color: '#C2410C' },
-  ref: { key: 'ref', label: 'Sukrosa referensi (tanpa asam)', short: 'Referensi', formula: 'Sukrosa + air', catalyzed: false, color: '#6D28D9' },
+  hcl: { key: 'hcl', label: 'Sukrosa + HCl 4 N', short: 'HCl', formula: 'Sukrosa + HCl', color: '#C2410C' },
 };
-export const ACID_KEYS: AcidKey[] = ['hcl', 'ref'];
+export const ACID_KEYS: AcidKey[] = ['hcl'];
+export const SUCROSE_COLOR = '#6D28D9';
 
 /**
  * Jadwal baca (menit) menurut Tabel 5.1 modul:
@@ -36,9 +39,12 @@ export interface AcidData {
 export interface InversiState {
   version: 1;
   schedule: number[];
-  zeroReading: number | null;  // pembacaan polarimeter untuk air suling (titik nol)
-  tubeLength: number | null;   // dm
-  temperatureC: number | null; // °C
+  zeroReading: number | null;    // pembacaan polarimeter untuk air suling (titik nol)
+  sucroseReading: number | null; // pembacaan larutan sukrosa murni (sekali, sebelum HCl)
+  /** false = larutan stok 20 g/100 mL; true = sudah diencerkan 1 : 1 dengan air (setara campuran reaksi) */
+  sucroseDiluted: boolean;
+  tubeLength: number | null;     // dm
+  temperatureC: number | null;   // °C
   acids: Record<AcidKey, AcidData>;
 }
 
@@ -56,9 +62,11 @@ export const INITIAL_STATE: InversiState = {
   version: 1,
   schedule: DEFAULT_SCHEDULE,
   zeroReading: null,
+  sucroseReading: null,
+  sucroseDiluted: false,
   tubeLength: null,
   temperatureC: null,
-  acids: { hcl: emptyAcid(DEFAULT_SCHEDULE.length), ref: emptyAcid(DEFAULT_SCHEDULE.length) },
+  acids: { hcl: emptyAcid(DEFAULT_SCHEDULE.length) },
 };
 
 const fit = <T,>(arr: T[] | undefined, n: number, fill: T): T[] =>
@@ -76,13 +84,26 @@ export function normalizeState(raw: any): InversiState {
     alphaInf: typeof a?.alphaInf === 'number' ? a.alphaInf : null,
   });
   const num = (v: any) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  // Data versi sebelumnya menyimpan sukrosa sebagai sampel "referensi" (sukrosa + air 1 : 1):
+  // ambil pembacaan pertamanya sebagai pembacaan sukrosa.
+  let sucroseReading = num(raw.sucroseReading);
+  let sucroseDiluted = typeof raw.sucroseDiluted === 'boolean' ? raw.sucroseDiluted : false;
+  if (sucroseReading === null && Array.isArray(raw.acids?.ref?.alphas)) {
+    const first = raw.acids.ref.alphas.find((v: any) => typeof v === 'number');
+    if (typeof first === 'number') {
+      sucroseReading = first;
+      sucroseDiluted = true;
+    }
+  }
   return {
     version: 1,
     schedule,
     zeroReading: num(raw.zeroReading),
+    sucroseReading,
+    sucroseDiluted,
     tubeLength: num(raw.tubeLength),
     temperatureC: num(raw.temperatureC),
-    acids: { hcl: acid(raw.acids?.hcl), ref: acid(raw.acids?.ref) },
+    acids: { hcl: acid(raw.acids?.hcl) },
   };
 }
 
@@ -90,16 +111,18 @@ export function normalizeState(raw: any): InversiState {
 export function withSchedule(state: InversiState, schedule: number[]): InversiState {
   const n = schedule.length;
   const resize = (a: AcidData): AcidData => ({ ...a, times: fit(a.times, n, null), alphas: fit(a.alphas, n, null) });
-  return { ...state, schedule, acids: { hcl: resize(state.acids.hcl), ref: resize(state.acids.ref) } };
+  return { ...state, schedule, acids: { hcl: resize(state.acids.hcl) } };
 }
 
 export function hasAnyData(s: InversiState) {
+  const a = s.acids.hcl;
   return (
     s.zeroReading !== null ||
-    ACID_KEYS.some((k) => {
-      const a = s.acids[k];
-      return a.startedAt !== null || a.alphaInf !== null || a.times.some((v) => v !== null) || a.alphas.some((v) => v !== null);
-    })
+    s.sucroseReading !== null ||
+    a.startedAt !== null ||
+    a.alphaInf !== null ||
+    a.times.some((v) => v !== null) ||
+    a.alphas.some((v) => v !== null)
   );
 }
 
@@ -212,25 +235,55 @@ export function unlockAudio() {
   }
 }
 
-export function beep(kind: 'warn' | 'now') {
+const SOUND_KEY = 'srslab_sound';
+
+export function isSoundOn() {
+  try {
+    return localStorage.getItem(SOUND_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+export function setSoundOn(on: boolean) {
+  try {
+    localStorage.setItem(SOUND_KEY, on ? 'on' : 'off');
+  } catch {
+    // abaikan
+  }
+}
+
+/** Satu bip pendek berbentuk kotak (terdengar seperti alarm jam digital). */
+function tone(offset: number, freq: number, dur: number) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = freq;
+  const t0 = audioCtx.currentTime + offset;
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.01);
+  gain.gain.setValueAtTime(0.18, t0 + dur - 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.02);
+}
+
+/**
+ * warn: "nit-nit-nit" (3 bip pendek) 30 detik sebelum jadwal baca.
+ * now : 2 × "nit-nit-nit" lebih panjang tepat pada jadwal baca.
+ */
+export function beep(kind: 'warn' | 'now', force = false) {
+  if (!force && !isSoundOn()) return;
   try {
     unlockAudio();
-    if (audioCtx) {
-      const pattern = kind === 'now' ? [0, 0.25, 0.5] : [0];
-      pattern.forEach((offset) => {
-        const osc = audioCtx!.createOscillator();
-        const gain = audioCtx!.createGain();
-        osc.frequency.value = kind === 'now' ? 880 : 660;
-        const t0 = audioCtx!.currentTime + offset;
-        gain.gain.setValueAtTime(0.0001, t0);
-        gain.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
-        osc.connect(gain).connect(audioCtx!.destination);
-        osc.start(t0);
-        osc.stop(t0 + 0.2);
-      });
+    if (kind === 'warn') {
+      [0, 0.16, 0.32].forEach((o) => tone(o, 2100, 0.08));
+    } else {
+      [0, 0.16, 0.32, 0.7, 0.86, 1.02].forEach((o) => tone(o, 2400, 0.1));
     }
-    if (navigator.vibrate) navigator.vibrate(kind === 'now' ? [200, 100, 200, 100, 200] : 150);
+    if (navigator.vibrate) navigator.vibrate(kind === 'now' ? [120, 60, 120, 60, 120, 300, 120, 60, 120, 60, 120] : [80, 60, 80, 60, 80]);
   } catch {
     // abaikan
   }
@@ -277,7 +330,7 @@ export function useReadingAlerts(state: InversiState, now: number) {
       if (countdownMs <= 0 && countdownMs > -5000 && !fired.current.has(`${id}:now`)) {
         fired.current.add(`${id}:now`);
         beep('now');
-      } else if (countdownMs <= 30000 && countdownMs > 25000 && !fired.current.has(`${id}:warn`)) {
+      } else if (countdownMs <= 30000 && countdownMs > 0 && !fired.current.has(`${id}:warn`)) {
         fired.current.add(`${id}:warn`);
         beep('warn');
       }

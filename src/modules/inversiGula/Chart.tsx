@@ -56,7 +56,9 @@ export const Chart = React.forwardRef<SVGSVGElement, ChartProps>(function Chart(
   ref
 ) {
   const pts = series.flatMap((s) => s.points);
-  const left = 64, right = 20, top = title ? (subtitle ? 62 : 44) : 18, bottom = 56;
+  // Legenda (bila lebih dari satu seri) diletakkan di atas area plot agar tidak menutupi titik data
+  const legendH = series.length > 1 ? 22 : 0;
+  const left = 64, right = 20, top = (title ? (subtitle ? 62 : 44) : 18) + legendH, bottom = 56;
   const W = width - left - right, H = height - top - bottom;
 
   const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
@@ -129,9 +131,8 @@ export const Chart = React.forwardRef<SVGSVGElement, ChartProps>(function Chart(
       {series.length > 1 && (
         <g>
           {series.map((s, i) => (
-            <g key={s.label} transform={`translate(${left + 12 + i * 170}, ${top + 14})`}>
-              <rect x="-6" y="-11" width="160" height="20" rx="4" fill="#FFFFFF" opacity="0.9" />
-              <circle cx="2" cy="-1" r="5" fill={s.color} />
+            <g key={s.label} transform={`translate(${left + 8 + i * 150}, ${top - 12})`}>
+              <circle cx="2" cy="-1" r="5" fill={s.hollow ? '#FFFFFF' : s.color} stroke={s.color} strokeWidth={s.hollow ? 2 : 0} />
               <text x="14" y="3" fontSize="12" fill="#17153B">{s.label}</text>
             </g>
           ))}

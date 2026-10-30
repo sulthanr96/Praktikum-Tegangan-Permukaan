@@ -129,7 +129,7 @@ export default function InversiGulaModule({ user, onBackToModules, onLogout }: M
               <ProsedurStep state={state} setState={setState} now={now} acid={acid} onSelectAcid={setAcid} onGoToWorksheet={() => goTo(2)} />
             </div>
           )}
-          {step === 2 && <LembarKerjaStep state={state} setState={setState} now={now} acid={acid} onSelectAcid={setAcid} onGoToStopwatch={() => goToStopwatch()} />}
+          {step === 2 && <LembarKerjaStep state={state} setState={setState} now={now} onGoToStopwatch={() => goToStopwatch()} />}
           {step === 3 && <AnalisisStep state={state} />}
           {step === 4 && <EksporStep state={state} user={user} cloud={cloud} onPrint={setPrintMode} />}
         </main>

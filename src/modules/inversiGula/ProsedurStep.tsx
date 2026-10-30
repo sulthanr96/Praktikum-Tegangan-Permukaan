@@ -25,7 +25,6 @@ const TOOLS = [
 const CHEMICALS = [
   ['Sukrosa (p.a.)', '20 gram'],
   ['Larutan asam klorida (p.a.)', '4 N'],
-  ['Air suling (untuk sampel referensi)', '25 mL'],
 ];
 
 const Steps: React.FC<{ items: React.ReactNode[]; start?: number }> = ({ items, start = 1 }) => (
@@ -121,15 +120,16 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
         start={5}
         items={[
           'Larutkan 20 gram sukrosa dalam 100 mL air suling. Saring bila larutan tidak jernih.',
-          'Pipet 25 mL larutan sukrosa ke Erlenmeyer 1 (sampel HCl) dan 25 mL lagi ke Erlenmeyer 2 (referensi).',
-          'Siapkan 25 mL HCl 4 N dan 25 mL air suling. Pastikan stopwatch siap — di website ini, buka tahap C di bawah.',
+          <>Isi tabung polarimeter dengan larutan sukrosa (tanpa asam), ukur sudut putarnya <strong>sekali</strong> → catat sebagai α sukrosa murni. Kosongkan tabung.</>,
+          'Pipet 25 mL larutan sukrosa ke dalam Erlenmeyer 100 mL.',
+          'Siapkan 25 mL HCl 4 N. Pastikan stopwatch siap — di website ini, buka tahap C di bawah.',
         ]}
       />
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))]">
         {[
           ['Sukrosa awal', '20 g / 100 mL ≈ 0,584 M', 'Mr sukrosa 342,30'],
           ['Setelah dicampur 1 : 1', '≈ 0,292 M sukrosa', 'volume menjadi 50 mL'],
-          ['HCl setelah dicampur', '4 N → 2 N', 'referensi: tanpa asam'],
+          ['HCl setelah dicampur', '4 N → 2 N', 'sukrosa : HCl = 1 : 1'],
         ].map(([title, value, note]) => (
           <div key={title} className="rounded-2xl bg-spek-soft p-4 flex flex-col gap-1">
             <span className="text-xs font-extrabold tracking-wider text-spek-violet-deep">{title.toUpperCase()}</span>
@@ -151,7 +151,7 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
       <Steps
         start={8}
         items={[
-          <>Tambahkan 25 mL HCl 4 N ke Erlenmeyer 1. <strong>Tekan Mulai (HCl) tepat saat mencampurkan</strong> — itulah t = 0. Aduk sampai rata. Tambahkan 25 mL air suling ke Erlenmeyer 2 (referensi) dan mulai stopwatch Referensi.</>,
+          <>Tambahkan 25 mL HCl 4 N ke larutan sukrosa. <strong>Tekan Mulai tepat saat mencampurkan</strong> — itulah t = 0. Aduk sampai rata.</>,
           'Segera bilas tabung polarimeter dengan sedikit campuran, lalu isi penuh dengan campuran reaksi.',
           'Baca sudut putar sesuai jadwal. Tekan "Catat waktu baca" tepat saat membaca, lalu ketik sudutnya.',
         ]}
@@ -184,9 +184,9 @@ export const ProsedurStep: React.FC<ProsedurStepProps> = ({ state, setState, now
         75, 90, 105, 120. Waktu baca yang dipakai dalam perhitungan selalu <strong>waktu aktual</strong>, jadi sedikit terlambat tidak masalah.
       </Note>
       <Stopwatch state={state} setState={setState} now={now} acid={acid} onSelectAcid={onSelectAcid} />
-      <Note kind="tip" title="SAMPEL HCl & REFERENSI">
-        Kedua stopwatch berjalan sendiri-sendiri. Prioritaskan jadwal sampel HCl karena α-nya berubah cepat. Referensi boleh dibaca lebih jarang di sela jadwal HCl
-        (sesuai arahan aslab) — baris yang tidak dibaca cukup dikosongkan. Peringatan bunyi muncul 30 detik sebelum dan tepat pada jadwal, di langkah mana pun.
+      <Note kind="tip" title="ALARM">
+        Terdengar "nit-nit-nit" 30 detik sebelum jadwal baca dan alarm lebih panjang tepat pada jadwal, di langkah mana pun Anda berada. Coba bunyinya dulu dengan
+        tombol "Tes" di bawah stopwatch, dan pastikan volume media HP tidak senyap.
       </Note>
     </Card>
 

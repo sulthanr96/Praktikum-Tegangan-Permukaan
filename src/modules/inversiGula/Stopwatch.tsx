@@ -6,6 +6,9 @@ import {
   formatMinutes,
   scheduleLabel,
   timerStatus,
+  beep,
+  isSoundOn,
+  setSoundOn,
   unlockAudio,
   withSchedule,
   type AcidKey,
@@ -105,6 +108,13 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
   const [scheduleText, setScheduleText] = useState(state.schedule.join(', '));
   const [scheduleError, setScheduleError] = useState('');
   const anyRunning = ACID_KEYS.some((k) => state.acids[k].startedAt !== null);
+  const [soundOn, setSound] = useState(isSoundOn);
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSound(next);
+    if (next) beep('warn', true);
+  };
 
   const update = (patch: Partial<typeof data>) =>
     setState((s) => ({ ...s, acids: { ...s.acids, [acid]: { ...s.acids[acid], ...patch } } }));
@@ -163,6 +173,7 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
 
   return (
     <div id="stopwatch" className="flex flex-col gap-4 scroll-mt-32">
+      {ACID_KEYS.length > 1 && (
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pilih sampel">
         {ACID_KEYS.map((k) => {
           const s = timerStatus(state.acids[k], state.schedule, now);
@@ -187,6 +198,7 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
           );
         })}
       </div>
+      )}
 
       <section className={`rounded-[28px] p-5 sm:p-6 flex flex-wrap gap-6 items-center text-white transition-colors ${due ? 'bg-spek-indigo' : 'bg-spek-orange'}`}>
         <AnalogClock
@@ -205,11 +217,7 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
 
           {st.finished ? (
             <div className="rounded-2xl bg-spek-orange-deep px-4 py-3 text-[15px] leading-relaxed">
-              {ACIDS[acid].catalyzed ? (
-                <>Semua pembacaan terjadwal selesai. Lanjutkan ke penentuan <strong>α∞</strong> (pemanasan ±40 °C, 20 menit).</>
-              ) : (
-                <>Semua pembacaan referensi selesai. Referensi tidak memerlukan α∞.</>
-              )}
+              Semua pembacaan terjadwal selesai. Lanjutkan ke penentuan <strong>α∞</strong> (pemanasan ±40 °C, 20 menit).
             </div>
           ) : (
             <div className={`rounded-2xl px-4 py-3 flex items-center justify-between gap-3 ${due ? 'bg-spek-lime text-spek-indigo' : 'bg-spek-orange-deep'}`} aria-live="polite">
@@ -275,6 +283,28 @@ export const Stopwatch: React.FC<StopwatchProps> = ({ state, setState, now, acid
           />
         </div>
       )}
+
+      <div className="bg-white rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3">
+        <div className="flex flex-col flex-[1_1_220px]">
+          <span className="font-bold text-[15px]">Alarm pengingat</span>
+          <span className="text-sm text-spek-muted">"Nit-nit-nit" 30 detik sebelum jadwal, alarm lebih panjang tepat pada jadwal, plus getar di HP.</span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={soundOn}
+          onClick={toggleSound}
+          className={`min-h-[44px] px-4 rounded-full text-sm font-bold cursor-pointer ${soundOn ? 'bg-spek-lime text-spek-indigo' : 'bg-spek-soft text-spek-muted border-2 border-spek-violet-tint'}`}
+        >
+          Bunyi: {soundOn ? 'aktif' : 'mati'}
+        </button>
+        <button type="button" onClick={() => beep('warn', true)} className="min-h-[44px] px-4 rounded-full border-2 border-spek-violet-tint text-sm font-bold cursor-pointer hover:bg-spek-soft">
+          Tes "nit-nit-nit"
+        </button>
+        <button type="button" onClick={() => beep('now', true)} className="min-h-[44px] px-4 rounded-full border-2 border-spek-violet-tint text-sm font-bold cursor-pointer hover:bg-spek-soft">
+          Tes alarm baca
+        </button>
+      </div>
 
       <details className="bg-white rounded-2xl px-4 py-3">
         <summary className="cursor-pointer min-h-[36px] flex items-center font-bold text-[15px]">Jadwal pembacaan ({state.schedule.length} titik)</summary>
